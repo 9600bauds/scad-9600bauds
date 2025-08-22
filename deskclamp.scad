@@ -9,8 +9,9 @@ taper_angle = 30; // Angle of the side taper.
 // --- Middle Section ---
 spigot_diameter = 12.4; // [mm] The outer diameter of the lamp's spigot.
 spigot_socket_length = 32; // [mm] How deep the spigot fits into the clamp, from the top.
-middle_wall_thickness = 3.2; // [mm] Thickness of the walls around the lamp spigot.
-middle_rounding_radius = 4; // [mm] The fillet radius for the internal corners of the "C".
+spigot_wall_thickness = 3; // [mm] Thickness of the outer cylinder around the lamp spigot.
+middle_wall_thickness = 5; // [mm] Thickness of the wall connecting the top and bottom arms.
+middle_rounding_radius = 4; // [mm] The fillet radius for the inner wall.
 
 // --- Top Arm Parameters ---
 top_depth = 40; // [mm] How far into the desk the top arm goes.
@@ -48,10 +49,12 @@ debug_mode = false; // Set to true to show cutouts in red inside a transparent b
 //  Derived Variables
 // =============================================================================
 
-total_height = top_thickness + max_desk_thickness + desk_screw_cap_thickness + bottom_thickness;
-back_cylinder_diameter = spigot_diameter + middle_wall_thickness * 2;
+middle_wall_height = max_desk_thickness + desk_screw_cap_thickness;
+total_height = top_thickness + middle_wall_height + bottom_thickness;
 spigot_socket_diameter = spigot_diameter + spigot_tolerance;
-bottom_arm_center = back_cylinder_diameter / 2 + bottom_depth / 2;
+back_cylinder_diameter = spigot_socket_diameter + spigot_wall_thickness * 2;
+extra_inner_offset = middle_wall_thickness - spigot_wall_thickness;
+bottom_arm_center = (spigot_socket_diameter / 2) + middle_wall_thickness + bottom_depth / 2;
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -64,6 +67,7 @@ assert(max_desk_thickness > 0, "ERROR: max_desk_thickness must be a positive val
 assert(top_thickness > 0, "ERROR: top_thickness must be a positive value.");
 assert(bottom_thickness > 0, "ERROR: bottom_thickness must be a positive value.");
 assert(spigot_diameter > 0, "ERROR: spigot_diameter must be a positive value.");
+assert(spigot_wall_thickness > 0, "ERROR: spigot_wall_thickness must be a positive value.");
 assert(middle_wall_thickness > 0, "ERROR: middle_wall_thickness must be a positive value.");
 
 // Check if the side screw is logically placed to actually hit the spigot
@@ -98,9 +102,9 @@ assert(
 if (desk_hex_nut_thickness > bottom_thickness) {
   echo(str("WARNING: Desk nut thickness (", desk_hex_nut_thickness, ") is greater than the bottom arm thickness (", bottom_thickness, "). The nut will stick out from the bottom."));
 }
-if (side_hex_nut_thickness + epsilon > middle_wall_thickness + 0.8) {
+if (side_hex_nut_thickness + epsilon > spigot_wall_thickness + 0.8) {
   // Try for 0.8mm of wall
-  echo(str("WARNING: Side nut thickness (", side_hex_nut_thickness, ") is too much for the middle wall thickness (", middle_wall_thickness, "). The nut pocket may break through into the spigot socket."));
+  echo(str("WARNING: Side nut thickness (", side_hex_nut_thickness, ") is too much for the spigot wall thickness (", spigot_wall_thickness, "). The nut pocket may break through into the spigot socket."));
 }
 
 // Check if the side screw is too close to the top edge
@@ -110,7 +114,7 @@ if (side_screw_offset < (side_hex_nut_size / 2) + 1) {
 }
 
 // Check for potentially weak, thin walls
-if (middle_wall_thickness < 2) {
+if (middle_wall_thickness < 3) {
   echo(str("WARNING: Middle wall thickness is very thin (", middle_wall_thickness, "mm). The clamp may be weak. Consider increasing it."));
 }
 if (top_thickness < 4) {
@@ -170,18 +174,18 @@ module screw_hole(d, h) {
 module top_arm_solid() {
   translate([0, 0, total_height - top_thickness])
     linear_extrude(height=top_thickness)
-      rounded_triangle(back_cylinder_diameter, top_rounding_radius, taper_angle, top_depth);
+      rounded_triangle(back_cylinder_diameter, top_rounding_radius, taper_angle, top_depth + extra_inner_offset);
 }
 
 module bottom_arm_solid() {
   linear_extrude(height=bottom_thickness)
-    rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth);
+    rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset);
 }
 
 module middle_section_solid() {
   translate([0, 0, bottom_thickness])
-    linear_extrude(height=max_desk_thickness + desk_screw_cap_thickness)
-      rounded_triangle(back_cylinder_diameter, middle_rounding_radius, taper_angle, 0);
+    linear_extrude(height=middle_wall_height)
+      rounded_triangle(back_cylinder_diameter, middle_rounding_radius, taper_angle, extra_inner_offset);
 }
 
 module clamp_body() {
