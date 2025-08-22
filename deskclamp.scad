@@ -3,36 +3,36 @@
 // =============================================================================
 
 // --- Main Clamp Shape ---
-max_desk_thickness = 40; // [mm] Maximum thickness of the desk/table.
+max_desk_thickness = 42; // [mm] Maximum thickness of the desk/table.
 taper_angle = 30; // Angle of the side taper.
 
 // --- Middle Section ---
-spigot_diameter = 12.8; // [mm] The outer diameter of the lamp's spigot.
-middle_wall_thickness = 8; // [mm] Thickness of the walls around the lamp spigot.
+spigot_diameter = 12.4; // [mm] The outer diameter of the lamp's spigot.
+spigot_socket_length = 32; // [mm] How deep the spigot fits into the clamp, from the top.
+middle_wall_thickness = 3.2; // [mm] Thickness of the walls around the lamp spigot.
 middle_rounding_radius = 4; // [mm] The fillet radius for the internal corners of the "C".
-spigot_socket_length = 40; // [mm] How deep the spigot fits into the clamp, from the top.
 
 // --- Top Arm Parameters ---
 top_depth = 40; // [mm] How far into the desk the top arm goes.
-top_thickness = 15; // [mm] The vertical thickness of the top arm.
+top_thickness = 5; // [mm] The vertical thickness of the top arm.
 top_rounding_radius = 8; // [mm] The fillet radius of the top arm.
 
 // --- Bottom Arm Parameters ---
 bottom_depth = 20; // [mm] How far into the desk the bottom arm goes.
-bottom_thickness = 15; // [mm] The vertical thickness of the bottom arm.
+bottom_thickness = 5; // [mm] The vertical thickness of the bottom arm.
 bottom_rounding_radius = 6; // [mm] The fillet radius of the bottom arm.
 
 // --- Desk Screw ---
-desk_hex_nut_size = 13; // [mm] The flat-to-flat distance of the desk hexagonal nut.
-desk_hex_nut_thickness = 4; // [mm] The thickness of the desk nut.
-desk_screw_diameter = 8; // [mm] The diameter of the desk screw.
+desk_hex_nut_size = 12.5; // [mm] The flat-to-flat distance of the desk hexagonal nut.
+desk_hex_nut_thickness = 6.75; // [mm] The thickness of the desk nut.
+desk_screw_diameter = 7.8; // [mm] The diameter of the desk screw.
 desk_screw_cap_diameter = 16; // [mm] The diameter of the screw cap.
 desk_screw_cap_thickness = 4; // [mm] The thickness of the screw cap.
 
 // --- Locking Screw ---
-side_screw_offset = 20; // [mm] How far down from the top surface the side screw is, from the top.
-side_hex_nut_size = 6.5; // [mm] The flat-to-flat distance of the side hexagonal nut.
-side_hex_nut_thickness = 3; // [mm] The thickness of the side nut.
+side_screw_offset = 8.65; // [mm] How far down from the top surface the side screw is, from the top.
+side_hex_nut_size = 7.9; // [mm] The flat-to-flat distance of the side hexagonal nut.
+side_hex_nut_thickness = 3.25; // [mm] The thickness of the side nut.
 side_screw_diameter = 4; // [mm] The diameter of the side screw.
 
 // --- Tolerances & Quality ---
@@ -42,14 +42,14 @@ epsilon = 0.1; // [mm] Extra margin for cut-throughs.
 $fn = 32; // Number of facets for curves. Higher is smoother.
 
 // --- Rendering options ---
-debug_mode = true; // Set to true to show cutouts in red inside a transparent body
+debug_mode = false; // Set to true to show cutouts in red inside a transparent body
 
 // =============================================================================
 //  Derived Variables
 // =============================================================================
 
 total_height = top_thickness + max_desk_thickness + desk_screw_cap_thickness + bottom_thickness;
-back_cylinder_diameter = spigot_diameter + middle_wall_thickness;
+back_cylinder_diameter = spigot_diameter + middle_wall_thickness * 2;
 spigot_socket_diameter = spigot_diameter + spigot_tolerance;
 bottom_arm_center = back_cylinder_diameter / 2 + bottom_depth / 2;
 
@@ -110,7 +110,7 @@ if (side_screw_offset < (side_hex_nut_size / 2) + 1) {
 }
 
 // Check for potentially weak, thin walls
-if (middle_wall_thickness < 1.6) {
+if (middle_wall_thickness < 2) {
   echo(str("WARNING: Middle wall thickness is very thin (", middle_wall_thickness, "mm). The clamp may be weak. Consider increasing it."));
 }
 if (top_thickness < 4) {
