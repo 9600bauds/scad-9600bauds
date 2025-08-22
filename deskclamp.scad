@@ -42,7 +42,7 @@ epsilon = 0.1; // [mm] Extra margin for cut-throughs.
 $fn = 32; // Number of facets for curves. Higher is smoother.
 
 // --- Rendering options ---
-debug_mode = false; // Set to true to show cutouts in red inside a transparent body
+debug_mode = true; // Set to true to show cutouts in red inside a transparent body
 
 // =============================================================================
 //  Derived Variables
@@ -192,6 +192,11 @@ module clamp_body() {
   }
 }
 
+module desk_screw_cap() {
+  translate([bottom_arm_center, 0, bottom_thickness])
+    cylinder(d=desk_screw_cap_diameter, h=desk_screw_cap_thickness);
+}
+
 // =============================================================================
 //  Clamp Cutout Components
 // =============================================================================
@@ -222,8 +227,10 @@ if (debug_mode) {
   // 1. Render the main body with the '%' modifier.
   // This makes it transparent in the preview, like an x-ray.
   %clamp_body();
-  // 2. Render the cutouts in a solid, contrasting color.
+  // 2. Render the cutouts in solid red.
   color("red") cutouts();
+  // 3. Render the conceptual screw cap in solid blue.
+  color("blue") desk_screw_cap();
 } else {
   difference() {
     clamp_body();
