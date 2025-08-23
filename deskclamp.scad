@@ -11,17 +11,19 @@ spigot_diameter = 12.4; // [mm] The outer diameter of the lamp's spigot.
 spigot_socket_length = 32; // [mm] How deep the spigot fits into the clamp, from the top.
 spigot_wall_thickness = 3; // [mm] Thickness of the outer cylinder around the lamp spigot.
 middle_wall_thickness = 5; // [mm] Thickness of the wall connecting the top and bottom arms.
-middle_rounding_radius = 4; // [mm] The fillet radius for the inner wall.
+middle_fillet_radius = 2; // [mm] The fillet radius for the inner wall.
 
 // --- Top Arm Parameters ---
 top_depth = 40; // [mm] How far into the desk the top arm goes.
 top_thickness = 5; // [mm] The vertical thickness of the top arm.
-top_rounding_radius = 8; // [mm] The fillet radius of the top arm.
+top_fillet_radius = 6; // [mm] The fillet radius of the top arm.
+top_chamfer_radius = 1;
 
 // --- Bottom Arm Parameters ---
 bottom_depth = 20; // [mm] How far into the desk the bottom arm goes.
 bottom_thickness = 5; // [mm] The vertical thickness of the bottom arm.
 bottom_rounding_radius = 6; // [mm] The fillet radius of the bottom arm.
+bottom_chamfer_radius = 1;
 
 // --- Desk Screw ---
 desk_hex_nut_size = 12.5; // [mm] The flat-to-flat distance of the desk hexagonal nut.
@@ -159,6 +161,24 @@ module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dis
   }
 }
 
+module chamfered_extrude(height, bottom_radius, top_radius) {
+    hull() {
+      translate([0,0,0]) // pointless but kept for legibility
+        linear_extrude(height=bottom_radius)
+          offset(r=-bottom_radius)  // shrink profile to "loft" the round
+            children();
+
+      translate([0,0,bottom_radius])
+        linear_extrude(height=height - bottom_radius - top_radius)
+          children();
+
+      translate([0,0,height-top_radius])
+        linear_extrude(height=top_radius)
+          offset(r=-top_radius)  // shrink profile to "loft" the round
+            children();
+    }
+}
+
 module hex_pocket(size, thickness, tol = hex_nut_tolerance) {
   r = (size / 2) / cos(30); // Apothecary to radius conversion for hexagon
   translate([0, 0, -epsilon]) cylinder(h=thickness + 2 * epsilon, r=r + tol, $fn=6);
@@ -173,19 +193,19 @@ module screw_hole(d, h) {
 
 module top_arm_solid() {
   translate([0, 0, total_height - top_thickness])
-    linear_extrude(height=top_thickness)
-      rounded_triangle(back_cylinder_diameter, top_rounding_radius, taper_angle, top_depth + extra_inner_offset);
+    chamfered_extrude(height = top_thickness, bottom_radius = 0, top_radius = top_chamfer_radius)
+      rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset);
 }
 
 module bottom_arm_solid() {
-  linear_extrude(height=bottom_thickness)
+  chamfered_extrude(height = bottom_thickness, bottom_radius = bottom_chamfer_radius, top_radius = bottom_chamfer_radius)
     rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset);
 }
 
 module middle_section_solid() {
-  translate([0, 0, bottom_thickness])
-    linear_extrude(height=middle_wall_height)
-      rounded_triangle(back_cylinder_diameter, middle_rounding_radius, taper_angle, extra_inner_offset);
+  translate([0, 0, bottom_chamfer_radius])
+    linear_extrude(height=total_height - bottom_chamfer_radius - top_chamfer_radius)
+      rounded_triangle(back_cylinder_diameter, middle_fillet_radius, taper_angle, extra_inner_offset);
 }
 
 module clamp_body() {
