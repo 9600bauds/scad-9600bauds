@@ -4,12 +4,12 @@
 
 // --- Main Clamp Shape ---
 max_desk_thickness = 42; // [mm] Maximum thickness of the desk/table.
-taper_angle = 30; // Angle of the side taper.
+taper_angle = 15; // Angle of the side taper.
 
 // --- Middle Section ---
 spigot_diameter = 12.4; // [mm] The outer diameter of the lamp's spigot.
 spigot_socket_length = 32; // [mm] How deep the spigot fits into the clamp, from the top.
-spigot_wall_thickness = 3; // [mm] Thickness of the outer cylinder around the lamp spigot.
+spigot_wall_thickness = 4; // [mm] Thickness of the outer cylinder around the lamp spigot.
 middle_wall_thickness = 5; // [mm] Thickness of the wall connecting the top and bottom arms.
 middle_fillet_radius = 2; // [mm] The fillet radius for the inner wall.
 
@@ -21,7 +21,7 @@ top_chamfer_radius = 1;
 
 // --- Bottom Arm Parameters ---
 bottom_depth = 20; // [mm] How far into the desk the bottom arm goes.
-bottom_thickness = 5; // [mm] The vertical thickness of the bottom arm.
+bottom_thickness = 7; // [mm] The vertical thickness of the bottom arm.
 bottom_rounding_radius = 6; // [mm] The fillet radius of the bottom arm.
 bottom_chamfer_radius = 1;
 
@@ -100,13 +100,12 @@ assert(
 
 // --- Non-Critical Warnings (will print to console) ---
 
-// Check if nut pockets are thicker than the parts they are in
-if (desk_hex_nut_thickness > bottom_thickness) {
-  echo(str("WARNING: Desk nut thickness (", desk_hex_nut_thickness, ") is greater than the bottom arm thickness (", bottom_thickness, "). The nut will stick out from the bottom."));
+// Check if nut pockets too thick for the parts they're in
+if (desk_hex_nut_thickness + epsilon + 0.8 > bottom_thickness) {
+  echo(str("WARNING: Desk nut thickness (", desk_hex_nut_thickness, ") is too much for the bottom arm thickness (", bottom_thickness, "). The nut may break through the bottom."));
 }
-if (side_hex_nut_thickness + epsilon > spigot_wall_thickness + 0.8) {
-  // Try for 0.8mm of wall
-  echo(str("WARNING: Side nut thickness (", side_hex_nut_thickness, ") is too much for the spigot wall thickness (", spigot_wall_thickness, "). The nut pocket may break through into the spigot socket."));
+if (side_hex_nut_thickness + epsilon + 0.8 > spigot_wall_thickness) {
+  echo(str("WARNING: Side nut thickness (", side_hex_nut_thickness, ") is too much for the spigot wall thickness (", spigot_wall_thickness, "). The nut may break through into the spigot socket."));
 }
 
 // Check if the side screw is too close to the top edge
