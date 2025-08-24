@@ -190,21 +190,35 @@ module screw_hole(d, h) {
 //  Clamp Solid Body Components
 // =============================================================================
 
+module top_arm_outline() rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset);
+module middle_outline() rounded_triangle(back_cylinder_diameter, middle_fillet_radius, taper_angle, extra_inner_offset);
+module bottom_outline() rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset);
+
 module top_arm_solid() {
-  translate([0, 0, total_height - top_thickness])
-    chamfered_extrude(height = top_thickness, bottom_radius = 0, top_radius = top_chamfer_radius)
-      rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset);
+  hull(){
+    translate([0, 0, total_height - top_thickness])
+      chamfered_extrude(height = top_thickness, bottom_radius = 0, top_radius = top_chamfer_radius)
+        top_arm_outline();
+    translate([0, 0, total_height - top_thickness])
+      linear_extrude(height=epsilon)
+        middle_outline();
+  }
 }
 
 module bottom_arm_solid() {
-  chamfered_extrude(height = bottom_thickness, bottom_radius = bottom_chamfer_radius, top_radius = bottom_chamfer_radius)
-    rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset);
+  hull(){
+    chamfered_extrude(height = bottom_thickness, bottom_radius = bottom_chamfer_radius, top_radius = bottom_chamfer_radius)
+      bottom_outline();
+  }
+  translate([0, 0, bottom_thickness - bottom_chamfer_radius])
+    linear_extrude(height=bottom_chamfer_radius)
+      middle_outline();
 }
 
 module middle_section_solid() {
-  translate([0, 0, bottom_chamfer_radius])
-    linear_extrude(height=total_height - bottom_chamfer_radius - top_chamfer_radius)
-      rounded_triangle(back_cylinder_diameter, middle_fillet_radius, taper_angle, extra_inner_offset);
+  translate([0, 0, bottom_thickness])
+    linear_extrude(height=middle_wall_height)
+      middle_outline();
 }
 
 module clamp_body() {
