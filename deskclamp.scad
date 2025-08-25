@@ -57,6 +57,7 @@ spigot_socket_diameter = spigot_diameter + spigot_tolerance;
 back_cylinder_diameter = spigot_socket_diameter + spigot_wall_thickness * 2;
 extra_inner_offset = middle_wall_thickness - spigot_wall_thickness;
 bottom_arm_center = (spigot_socket_diameter / 2) + middle_wall_thickness + bottom_depth / 2;
+print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(taper_angle / 2);
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -269,8 +270,10 @@ if (debug_mode) {
   // 3. Render the conceptual screw cap in solid blue.
   color("blue") desk_screw_cap();
 } else {
-  difference() {
-    clamp_body();
-    cutouts();
-  }
+  translate([0, 0, print_orientation_z_offset])
+    rotate([-(90), -taper_angle / 2, 0])
+      difference() {
+        clamp_body();
+        cutouts();
+      }
 }
