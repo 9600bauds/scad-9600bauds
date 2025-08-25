@@ -2,51 +2,52 @@
 //  Parameters - Adjust these values to customize your clamp
 // =============================================================================
 
-// --- Main Clamp Shape ---
-max_desk_thickness = 42; // [mm] Maximum thickness of the desk/table.
-taper_angle = 15; // Angle of the side taper.
+/* [Main Clamp Shape] */
+max_desk_thickness = 42; // [10:100] [mm] Maximum thickness of the desk/table.
+taper_angle = 15; // [0:45] Angle of the side taper.
 
-// --- Middle Section ---
-spigot_diameter = 12.4; // [mm] The outer diameter of the lamp's spigot.
-spigot_socket_length = 32; // [mm] How deep the spigot fits into the clamp, from the top.
-spigot_wall_thickness = 4; // [mm] Thickness of the outer cylinder around the lamp spigot.
-middle_wall_thickness = 5; // [mm] Thickness of the wall connecting the top and bottom arms.
-middle_fillet_radius = 2; // [mm] The fillet radius for the inner wall.
+/* [Middle Section] */
+spigot_diameter = 12.4; // [5:0.1:25] [mm] The outer diameter of the lamp's spigot.
+spigot_socket_length = 32; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
+spigot_wall_thickness = 4; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
+middle_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
+middle_fillet_radius = 2; // [0:0.5:10] [mm] The fillet radius for the inner wall.
 
-// --- Top Arm Parameters ---
-top_depth = 40; // [mm] How far into the desk the top arm goes.
-top_thickness = 5; // [mm] The vertical thickness of the top arm.
-top_fillet_radius = 6; // [mm] The fillet radius of the top arm.
-top_chamfer_radius = 1;
+/* [Top Arm Parameters] */
+top_depth = 40; // [10:100] [mm] How far into the desk the top arm goes.
+top_thickness = 5; // [2:0.5:15] [mm] The vertical thickness of the top arm.
+top_fillet_radius = 6; // [0:0.5:20] [mm] The fillet radius of the top arm.
+top_chamfer_radius = 1; // [0:0.5:3]
 
-// --- Bottom Arm Parameters ---
-bottom_depth = 20; // [mm] How far into the desk the bottom arm goes.
-bottom_thickness = 7; // [mm] The vertical thickness of the bottom arm.
-bottom_rounding_radius = 6; // [mm] The fillet radius of the bottom arm.
-bottom_chamfer_radius = 1;
+/* [Bottom Arm Parameters] */
+bottom_depth = 20; // [10:100] [mm] How far into the desk the bottom arm goes.
+bottom_thickness = 7; // [2:0.5:15] [mm] The vertical thickness of the bottom arm.
+bottom_rounding_radius = 6; // [0:0.5:20] [mm] The fillet radius of the bottom arm.
+bottom_chamfer_radius = 1; // [0:0.5:3]
 
-// --- Desk Screw ---
-desk_hex_nut_size = 12.5; // [mm] The flat-to-flat distance of the desk hexagonal nut.
-desk_hex_nut_thickness = 6.75; // [mm] The thickness of the desk nut.
-desk_screw_diameter = 7.8; // [mm] The diameter of the desk screw.
-desk_screw_cap_diameter = 16; // [mm] The diameter of the screw cap.
-desk_screw_cap_thickness = 4; // [mm] The thickness of the screw cap.
+/* [Desk Screw] */
+desk_hex_nut_size = 12.5; // [5:0.1:25] [mm] The flat-to-flat distance of the desk hexagonal nut.
+desk_hex_nut_thickness = 6.75; // [2:0.1:15] [mm] The thickness of the desk nut.
+desk_screw_diameter = 7.8; // [2:0.1:15] [mm] The diameter of the desk screw.
+desk_screw_cap_diameter = 16; // [5:0.1:30] [mm] The diameter of the screw cap.
+desk_screw_cap_thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
 
-// --- Locking Screw ---
-side_screw_offset = 8.65; // [mm] How far down from the top surface the side screw is, from the top.
-side_hex_nut_size = 7.9; // [mm] The flat-to-flat distance of the side hexagonal nut.
-side_hex_nut_thickness = 3.25; // [mm] The thickness of the side nut.
-side_screw_diameter = 4; // [mm] The diameter of the side screw.
+/* [Locking Screw] */
+side_screw_offset = 8.65; // [0:0.1:50] [mm] How far down from the top surface the side screw is, from the top.
+side_hex_nut_size = 7.9; // [2:0.1:15] [mm] The flat-to-flat distance of the side hexagonal nut.
+side_hex_nut_thickness = 3.25; // [1:0.1:10] [mm] The thickness of the side nut.
+side_screw_diameter = 4; // [1:0.1:10] [mm] The diameter of the side screw.
 
-// --- Tolerances & Quality ---
-spigot_tolerance = 0.4; // [mm] Tolerance (extra empty space) for the spigot. Increase for looser fit.
-hex_nut_tolerance = 0.4; // [mm] Tolerance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
-epsilon = 0.1; // [mm] Extra margin for cut-throughs.
-$fn = 32; // Number of facets for curves. Higher is smoother.
+/* [Tolerances & Quality] */
+spigot_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for the spigot. Increase for looser fit.
+hex_nut_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
+epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
+$fn = 32; // [16:128] Number of facets for curves. Higher is smoother.
 
-// --- Rendering options ---
-debug_mode = false; // Set to true to show cutouts in red inside a transparent body
+/* [Rendering options] */
+debug_mode = false; // Checkbox
 
+/* [Hidden] */
 // =============================================================================
 //  Derived Variables
 // =============================================================================
