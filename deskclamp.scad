@@ -61,30 +61,21 @@ extra_inner_offset = middle_wall_thickness - spigot_wall_thickness;
 bottom_arm_center = (spigot_socket_diameter / 2) + middle_wall_thickness + bottom_depth / 2;
 print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(taper_angle / 2);
 
+beamThickness = middle_wall_thickness;
+beamWidth = spigot_socket_diameter;     
+flangeThickness = beamThickness / 4 ;
+webThickness = beamThickness - flangeThickness;
+topBendRadius = beamThickness*1.5;
+bottomEndRadius = beamThickness;
 
-
-
-
-
-beamThickness    = middle_wall_thickness;
-innerBendR   = beamThickness*2;    // inside bend radius at the left side (centerline radius)
-endCornerR   = beamThickness;     // small rounding at the two open ends
-
-flangeT      = beamThickness / 4 ;    // flange thickness (normal to path)
-webT         = beamThickness - flangeT;     // web thickness (normal to path)
-clampWidth   = spigot_socket_diameter;     // extrusion thickness along Z
-
-width = bottom_depth + beamThickness;
-height = total_height;
-
-innerOffset = webT/2 - flangeT / 2;
+innerOffset = webThickness/2 - flangeThickness / 2;
 outerOffset = beamThickness/2;
 
 hb = beamThickness / 2;
-maxx = width - hb;
-minx = 0 + hb;
-maxy = height - hb;
-miny = 0 + hb;
+support_maxx = bottom_depth + extra_inner_offset - hb;
+support_minx = 0 + hb;
+support_maxy = total_height - hb;
+support_miny = 0 + hb;
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -289,68 +280,68 @@ module cutouts() {
 // =============================================================================
 
 module cbeam(){
-    cbeamPath = [    
-  //[maxx, maxy - beamThickness ,0],
-  //[maxx, maxy, innerBendR],
-  [maxx, maxy, 0],
-  [minx, maxy, endCornerR],
-  [minx, miny, innerBendR ],
-  [maxx, miny, 0]  
-];
-    topRP  = beamChain(cbeamPath, offset1 =  outerOffset, offset2 =  outerOffset - flangeT);
-    botRP  = beamChain(cbeamPath, offset1 = -outerOffset + flangeT, offset2 = -outerOffset);
-    webRP  = beamChain(cbeamPath, offset1 =  innerOffset,  offset2 = -innerOffset);
-    
-    rotate([(90), 0, 0])
+  cbeamPath = [    
+    //[support_maxx, support_maxy - beamThickness ,0],
+    //[support_maxx, support_maxy, topBendRadius],
+    [support_maxx, support_maxy, 0],
+    [support_minx, support_maxy, bottomEndRadius],
+    [support_minx, support_miny, topBendRadius ],
+    [support_maxx, support_miny, 0]  
+  ];
+  top_poly  = beamChain(cbeamPath, offset1 =  outerOffset, offset2 =  outerOffset - flangeThickness);
+  bot_poly  = beamChain(cbeamPath, offset1 = -outerOffset + flangeThickness, offset2 = -outerOffset);
+  web_poly  = beamChain(cbeamPath, offset1 =  innerOffset,  offset2 = -innerOffset);
+  
+
     union(){
-      translate([0, 0, clampWidth/3]) 
-        linear_extrude(clampWidth/3) polygon(polyRound(webRP, fnSmooth));
-      linear_extrude(clampWidth) polygon(polyRound(topRP, fnSmooth));
-      linear_extrude(clampWidth) polygon(polyRound(botRP, fnSmooth));
+      translate([0, 0, beamWidth/3]) 
+        linear_extrude(beamWidth/3) polygon(polyRound(web_poly, fnSmooth));
+      linear_extrude(beamWidth) polygon(polyRound(top_poly, fnSmooth));
+      linear_extrude(beamWidth) polygon(polyRound(bot_poly, fnSmooth));
     }
-        // --- DEBUG: Draw the centerline path in red ---
-        //dbgPathRP = beamChain(path, offset1=0.5, offset2=-0.5);
-        //color("red") polygon(polyRound(dbgPathRP, fnSmooth));
-        // --- DEBUG: Draw the abstract path in magenta ---
-        //for(p = bottomGussetPath) {
-        //  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
-        //}
-
+    // --- DEBUG: Draw the centerline path in red ---
+    dbgPathRP = beamChain(cbeamPath, offset1=0.5, offset2=-0.5);
+    color("red") polygon(polyRound(dbgPathRP, fnSmooth));
+    // --- DEBUG: Draw the abstract path in magenta ---
+    for(p = cbeamPath) {
+      translate([p[0], p[1], 0]) color("magenta") circle(r=2);
+    }
 }
-module gussets(){
-    function corner_gusset_path(corner_point, radius, direction_v=[1,1]) = [
-  [corner_point[0] + radius * direction_v[0], corner_point[1], 0],
-  [corner_point[0], corner_point[1], radius],
-  [corner_point[0], corner_point[1] + radius * direction_v[1], 0]
-];
-    topGussetPath = corner_gusset_path(
-  corner_point = [minx, maxy], 
-  radius       = endCornerR, 
-  direction_v  = [1, -1]
-);
-bottomGussetPath = corner_gusset_path(
-  corner_point = [minx + innerBendR / 8, miny + innerBendR / 8],
-  radius       = innerBendR / 2,
-  direction_v  = [1, 1] 
-);
-    
-    topGP  = beamChain(topGussetPath, offset1 =  innerOffset, offset2 = -innerOffset);
-    botGP  = beamChain(bottomGussetPath, offset1 =  outerOffset - flangeT / 2, offset2 = -outerOffset + flangeT / 2);
-    
-    rotate([(90), 0, 0])
-        union(){
 
-      linear_extrude(clampWidth) polygon(polyRound(topGP, fnSmooth));
-      linear_extrude(clampWidth) polygon(polyRound(botGP, fnSmooth));
-    }
+module gussets(){
+  function corner_gusset_poly(corner_point, radius, direction_v=[1,1]) = [
+    [corner_point[0] + radius * direction_v[0], corner_point[1], 0],
+    [corner_point[0], corner_point[1], radius],
+    [corner_point[0], corner_point[1] + radius * direction_v[1], 0]
+  ];
+  topGussetPath = corner_gusset_poly(
+    corner_point = [support_minx, support_maxy], 
+    radius       = bottomEndRadius, 
+    direction_v  = [1, -1]
+  );
+  bottomGussetPath = corner_gusset_poly(
+    corner_point = [support_minx, support_miny],
+    radius       = topBendRadius,
+    direction_v  = [1, 1] 
+  );
+      
+  top_g_poly  = beamChain(topGussetPath, innerOffset, -innerOffset);
+  bot_g_poly  = beamChain(bottomGussetPath, innerOffset, -innerOffset);
+  
+  linear_extrude(beamWidth) polygon(polyRound(top_g_poly, fnSmooth));
+  intersection() { // Cut off the excess
+      linear_extrude(beamWidth) polygon(polyRound(bot_g_poly, fnSmooth));
+      cube(beamWidth);
+  }
 }
 
 module support(){
-    translate([spigot_socket_diameter / 2, clampWidth/2, 0]){
-        cbeam();
-        gussets();
-     }
+  translate([spigot_socket_diameter / 2, beamWidth/2, 0])
+    rotate([(90), 0, 0]){
+      cbeam();
+      gussets();
     }
+}
 
 // =============================================================================
 //  Main Assembly
@@ -366,7 +357,7 @@ module support(){
       // Render the cutouts in solid red.
       color("red") cutouts();
       // Render the support in solid black.
-      color("black") support();
+       support();
       // Render the conceptual screw cap in solid blue.
       color("blue") desk_screw_cap();
         
