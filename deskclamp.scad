@@ -45,7 +45,7 @@ epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
 $fn = 32; // [16:128] Number of facets for curves. Higher is smoother.
 
 /* [Rendering options] */
-debug_mode = false; // Checkbox
+debug_mode = true; // Checkbox
 
 /* [Hidden] */
 // =============================================================================
@@ -59,6 +59,34 @@ back_cylinder_diameter = spigot_socket_diameter + spigot_wall_thickness * 2;
 extra_inner_offset = middle_wall_thickness - spigot_wall_thickness;
 bottom_arm_center = (spigot_socket_diameter / 2) + middle_wall_thickness + bottom_depth / 2;
 print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(taper_angle / 2);
+
+//-------------------------------------
+// Parameters
+//-------------------------------------
+innerBendR   = 35;    // inside bend radius at the left side (centerline radius)
+endCornerR   = 3;     // small rounding at the two open ends
+beamThickness    = bottom_thickness;
+flangeT      = 1 ;    // flange thickness (normal to path)
+webT         = beamThickness - flangeT;     // web thickness (normal to path)
+clampWidth   = 5;     // extrusion thickness along Z
+fnSmooth     = 5;    // smoothness for arcs/radii
+width = top_depth;
+height = total_height;
+
+// Tip: To avoid flange self-intersection on the inside of the C,
+// keep innerBendR >= beamThickness/2 + flangeT/2
+
+//-------------------------------------
+// C-shaped centerline as radiiPoints
+//-------------------------------------
+
+path = [    
+  [  width,   height/1.5,    0     ],
+  [  width,    height,    innerBendR     ],
+  [   0,    height,    endCornerR  ],
+  [   0,   0,    innerBendR ],
+  [ width,  0,    0 ]  
+];
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -262,20 +290,60 @@ module cutouts() {
 //  Main Assembly
 // =============================================================================
 
-if (debug_mode) {
-  // 1. Render the main body with the '%' modifier.
-  // This makes it transparent in the preview, like an x-ray.
-  %clamp_body();
-  // 2. Render the cutouts in solid red.
-  color("red") cutouts();
-  // 3. Render the conceptual screw cap in solid blue.
-  color("blue") desk_screw_cap();
-} else {
-  translate([0, 0, print_orientation_z_offset])
-    rotate([-(90), -taper_angle / 2, 0])
-      difference() {
-        clamp_body();
-        cutouts();
+
+
+//-------------------------------------
+// Build the three ribbons with beamChain
+//-------------------------------------
+// Web
+webRP  = beamChain(path, offset1 =  webT/2 - flangeT / 2,                      offset2 = -webT/2 + flangeT / 2);
+
+// Top flange
+topRP  = beamChain(path, offset1 =  beamThickness/2,     offset2 =  beamThickness/2 - flangeT);
+  
+// Bottom flange
+botRP  = beamChain(path, offset1 = -beamThickness/2 + flangeT,     offset2 = -beamThickness/2);
+
+//-------------------------------------
+// 2D preview (optional)
+// Uncomment to see the ribbons in 2D
+//-------------------------------------
+
+
+translate([back_cylinder_diameter / 2, clampWidth/2, beamThickness / 2])
+rotate([(90), 0, 0]){
+ translate([0, 0, clampWidth/3]) 
+    color("lightgray") linear_extrude(clampWidth/3) polygon(polyRound(webRP, fnSmooth));
+ color("steelblue") linear_extrude(clampWidth) polygon(polyRound(topRP, fnSmooth));
+ color("steelblue") linear_extrude(clampWidth) polygon(polyRound(botRP, fnSmooth));
+// --- DEBUG: Draw the centerline path in red ---
+dbgPathRP = beamChain(path, offset1=0.5, offset2=-0.5);
+color("red") polygon(polyRound(dbgPathRP, fnSmooth));
+// --- DEBUG: Draw the abstract path in magenta ---
+for(p = path) {
+  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
+}
+
+}
+
+//translate([0, 0, print_orientation_z_offset])
+  //rotate([-(90), -taper_angle / 2, 0])
+    if (debug_mode) {
+      // 1. Render the main body with the '%' modifier.
+      // This makes it transparent in the preview, like an x-ray.
+      %clamp_body();
+      // 2. Render the cutouts in solid red.
+      color("red") cutouts();
+      // 3. Render the conceptual screw cap in solid blue.
+      color("blue") desk_screw_cap();
+    } else {
+          difference() {
+            clamp_body();
+            cutouts();
+          }
+    }
+
+
 
 // =============================================================================
 //  External Libraries
