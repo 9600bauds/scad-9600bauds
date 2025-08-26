@@ -43,6 +43,7 @@ spigot_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for the 
 hex_nut_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
 epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
 $fn = 32; // [16:128] Number of facets for curves. Higher is smoother.
+fnSmooth     = 8;    // smoothness for arcs/radii
 
 /* [Rendering options] */
 debug_mode = true; // Checkbox
@@ -60,33 +61,30 @@ extra_inner_offset = middle_wall_thickness - spigot_wall_thickness;
 bottom_arm_center = (spigot_socket_diameter / 2) + middle_wall_thickness + bottom_depth / 2;
 print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(taper_angle / 2);
 
-//-------------------------------------
-// Parameters
-//-------------------------------------
-innerBendR   = 35;    // inside bend radius at the left side (centerline radius)
-endCornerR   = 3;     // small rounding at the two open ends
-beamThickness    = bottom_thickness;
-flangeT      = 1 ;    // flange thickness (normal to path)
+
+
+
+
+
+beamThickness    = middle_wall_thickness;
+innerBendR   = beamThickness*2;    // inside bend radius at the left side (centerline radius)
+endCornerR   = beamThickness;     // small rounding at the two open ends
+
+flangeT      = beamThickness / 4 ;    // flange thickness (normal to path)
 webT         = beamThickness - flangeT;     // web thickness (normal to path)
-clampWidth   = 5;     // extrusion thickness along Z
-fnSmooth     = 5;    // smoothness for arcs/radii
-width = top_depth;
+clampWidth   = spigot_socket_diameter;     // extrusion thickness along Z
+
+width = bottom_depth + beamThickness;
 height = total_height;
 
-// Tip: To avoid flange self-intersection on the inside of the C,
-// keep innerBendR >= beamThickness/2 + flangeT/2
+innerOffset = webT/2 - flangeT / 2;
+outerOffset = beamThickness/2;
 
-//-------------------------------------
-// C-shaped centerline as radiiPoints
-//-------------------------------------
-
-path = [    
-  [  width,   height/1.5,    0     ],
-  [  width,    height,    innerBendR     ],
-  [   0,    height,    endCornerR  ],
-  [   0,   0,    innerBendR ],
-  [ width,  0,    0 ]  
-];
+hb = beamThickness / 2;
+maxx = width - hb;
+minx = 0 + hb;
+maxy = height - hb;
+miny = 0 + hb;
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -287,55 +285,93 @@ module cutouts() {
 }
 
 // =============================================================================
+//  Support Beam
+// =============================================================================
+
+module cbeam(){
+    cbeamPath = [    
+  //[maxx, maxy - beamThickness ,0],
+  //[maxx, maxy, innerBendR],
+  [maxx, maxy, 0],
+  [minx, maxy, endCornerR],
+  [minx, miny, innerBendR ],
+  [maxx, miny, 0]  
+];
+    topRP  = beamChain(cbeamPath, offset1 =  outerOffset, offset2 =  outerOffset - flangeT);
+    botRP  = beamChain(cbeamPath, offset1 = -outerOffset + flangeT, offset2 = -outerOffset);
+    webRP  = beamChain(cbeamPath, offset1 =  innerOffset,  offset2 = -innerOffset);
+    
+    rotate([(90), 0, 0])
+    union(){
+      translate([0, 0, clampWidth/3]) 
+        linear_extrude(clampWidth/3) polygon(polyRound(webRP, fnSmooth));
+      linear_extrude(clampWidth) polygon(polyRound(topRP, fnSmooth));
+      linear_extrude(clampWidth) polygon(polyRound(botRP, fnSmooth));
+    }
+        // --- DEBUG: Draw the centerline path in red ---
+        //dbgPathRP = beamChain(path, offset1=0.5, offset2=-0.5);
+        //color("red") polygon(polyRound(dbgPathRP, fnSmooth));
+        // --- DEBUG: Draw the abstract path in magenta ---
+        //for(p = bottomGussetPath) {
+        //  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
+        //}
+
+}
+module gussets(){
+    function corner_gusset_path(corner_point, radius, direction_v=[1,1]) = [
+  [corner_point[0] + radius * direction_v[0], corner_point[1], 0],
+  [corner_point[0], corner_point[1], radius],
+  [corner_point[0], corner_point[1] + radius * direction_v[1], 0]
+];
+    topGussetPath = corner_gusset_path(
+  corner_point = [minx, maxy], 
+  radius       = endCornerR, 
+  direction_v  = [1, -1]
+);
+bottomGussetPath = corner_gusset_path(
+  corner_point = [minx + innerBendR / 8, miny + innerBendR / 8],
+  radius       = innerBendR / 2,
+  direction_v  = [1, 1] 
+);
+    
+    topGP  = beamChain(topGussetPath, offset1 =  innerOffset, offset2 = -innerOffset);
+    botGP  = beamChain(bottomGussetPath, offset1 =  outerOffset - flangeT / 2, offset2 = -outerOffset + flangeT / 2);
+    
+    rotate([(90), 0, 0])
+        union(){
+
+      linear_extrude(clampWidth) polygon(polyRound(topGP, fnSmooth));
+      linear_extrude(clampWidth) polygon(polyRound(botGP, fnSmooth));
+    }
+}
+
+module support(){
+    translate([spigot_socket_diameter / 2, clampWidth/2, 0]){
+        cbeam();
+        gussets();
+     }
+    }
+
+// =============================================================================
 //  Main Assembly
 // =============================================================================
 
 
-
-//-------------------------------------
-// Build the three ribbons with beamChain
-//-------------------------------------
-// Web
-webRP  = beamChain(path, offset1 =  webT/2 - flangeT / 2,                      offset2 = -webT/2 + flangeT / 2);
-
-// Top flange
-topRP  = beamChain(path, offset1 =  beamThickness/2,     offset2 =  beamThickness/2 - flangeT);
-  
-// Bottom flange
-botRP  = beamChain(path, offset1 = -beamThickness/2 + flangeT,     offset2 = -beamThickness/2);
-
-//-------------------------------------
-// 2D preview (optional)
-// Uncomment to see the ribbons in 2D
-//-------------------------------------
-
-
-translate([back_cylinder_diameter / 2, clampWidth/2, beamThickness / 2])
-rotate([(90), 0, 0]){
- translate([0, 0, clampWidth/3]) 
-    color("lightgray") linear_extrude(clampWidth/3) polygon(polyRound(webRP, fnSmooth));
- color("steelblue") linear_extrude(clampWidth) polygon(polyRound(topRP, fnSmooth));
- color("steelblue") linear_extrude(clampWidth) polygon(polyRound(botRP, fnSmooth));
-// --- DEBUG: Draw the centerline path in red ---
-dbgPathRP = beamChain(path, offset1=0.5, offset2=-0.5);
-color("red") polygon(polyRound(dbgPathRP, fnSmooth));
-// --- DEBUG: Draw the abstract path in magenta ---
-for(p = path) {
-  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
-}
-
-}
-
 //translate([0, 0, print_orientation_z_offset])
   //rotate([-(90), -taper_angle / 2, 0])
     if (debug_mode) {
-      // 1. Render the main body with the '%' modifier.
+      // Render the main body with the '%' modifier.
       // This makes it transparent in the preview, like an x-ray.
       %clamp_body();
-      // 2. Render the cutouts in solid red.
+      // Render the cutouts in solid red.
       color("red") cutouts();
-      // 3. Render the conceptual screw cap in solid blue.
+      // Render the support in solid black.
+      color("black") support();
+      // Render the conceptual screw cap in solid blue.
       color("blue") desk_screw_cap();
+        
+
+        
     } else {
           difference() {
             clamp_body();
