@@ -65,8 +65,8 @@ beamThickness = middle_wall_thickness;
 beamWidth = spigot_socket_diameter;     
 flangeThickness = beamThickness / 4 ;
 webThickness = beamThickness - flangeThickness;
-topBendRadius = beamThickness*1.5;
-bottomEndRadius = beamThickness;
+topBendRadius = beamThickness;
+bottomEndRadius = beamThickness * 1.5;
 
 innerOffset = webThickness/2 - flangeThickness / 2;
 outerOffset = beamThickness/2;
@@ -281,11 +281,11 @@ module cutouts() {
 
 module cbeam(){
   cbeamPath = [    
-    //[support_maxx, support_maxy - beamThickness ,0],
-    //[support_maxx, support_maxy, topBendRadius],
+    //[support_maxx, support_maxy - topBendRadius / 2, 0],
+    //[support_minx + topBendRadius * 2, support_maxy - topBendRadius / 2, topBendRadius],
     [support_maxx, support_maxy, 0],
-    [support_minx, support_maxy, bottomEndRadius],
-    [support_minx, support_miny, topBendRadius ],
+    [support_minx, support_maxy, topBendRadius],
+    [support_minx, support_miny, bottomEndRadius ],
     [support_maxx, support_miny, 0]  
   ];
   top_poly  = beamChain(cbeamPath, offset1 =  outerOffset, offset2 =  outerOffset - flangeThickness);
@@ -316,12 +316,12 @@ module gussets(){
   ];
   topGussetPath = corner_gusset_poly(
     corner_point = [support_minx, support_maxy], 
-    radius       = bottomEndRadius, 
+    radius       = topBendRadius, 
     direction_v  = [1, -1]
   );
   bottomGussetPath = corner_gusset_poly(
     corner_point = [support_minx, support_miny],
-    radius       = topBendRadius,
+    radius       = bottomEndRadius,
     direction_v  = [1, 1] 
   );
       
