@@ -179,6 +179,25 @@ module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dis
   }
 }
 
+module crop_to_shape(flat_face_dist){
+  intersection(){
+    difference(){
+      children();
+      rotate([0, 0, 90 + taper_angle / 2])
+        translate([back_cylinder_diameter / 2, -999/2])
+            square(999);
+      rotate([0, 0, 90 - taper_angle / 2])
+        translate([-999 -back_cylinder_diameter / 2, -999/2])
+            square(999);
+    };
+    union(){
+      circle(back_cylinder_diameter / 2);
+      translate([0, -999/2])
+        square([back_cylinder_diameter / 2 + flat_face_dist, 999]);
+    }
+  }
+}
+
 module chamfered_extrude(height, bottom_radius, top_radius) {
     hull() {
       translate([0,0,0]) // pointless but kept for legibility
