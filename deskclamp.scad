@@ -15,6 +15,7 @@ spigot_diameter = 12.4; // [5:0.1:25] [mm] The outer diameter of the lamp's spig
 spigot_socket_length = 32; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
 spigot_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
 middle_wall_thickness = 6; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
+extra_infill_shell_clearance = 5;
 
 /* [Top Arm Parameters] */
 top_depth = 40; // [10:100] [mm] How far into the desk the top arm goes.
@@ -262,22 +263,22 @@ module desk_screw_cap() {
 // =============================================================================
 //  Clamp Cutout Components
 // =============================================================================
-module cutouts() {
+module cutouts(offset = 0) {
   // Hole for the spigot
-  translate([0, 0, total_height - spigot_socket_length]) {
-    screw_hole(d=spigot_socket_diameter, h=spigot_socket_length);
-  }
+  translate([0, 0, total_height])
+    rotate([0, 180, 0])
+        screw_hole(d=spigot_socket_diameter + offset, h=spigot_socket_length + offset);
   // Desk screw + hex socket in the bottom arm
   translate([bottom_arm_center, 0, 0]) { 
-      screw_hole(d=desk_screw_diameter, h=bottom_thickness);
-      translate([0, 0, desk_nut_clearance])
-      hex_pocket(size=desk_hex_nut_size, thickness=desk_hex_nut_thickness);
+      screw_hole(d=desk_screw_diameter + offset, h=bottom_thickness + offset);
+      translate([0, 0, desk_nut_clearance - offset])
+      hex_pocket(size=desk_hex_nut_size + offset, thickness=desk_hex_nut_thickness + offset);
   }
   // Side screw + hex socket at the back
   translate([(back_cylinder_diameter / -2), 0, total_height - side_screw_offset]) {
     rotate([0, 90, 0]) {
-      screw_hole(d=side_screw_diameter, h=back_cylinder_diameter / 2);
-      hex_pocket(size=side_hex_nut_size, thickness=side_hex_nut_thickness);
+      screw_hole(d=side_screw_diameter + offset, h=back_cylinder_diameter / 2 + offset);
+      hex_pocket(size=side_hex_nut_size + offset, thickness=side_hex_nut_thickness + offset);
     }
   }
 }
@@ -345,7 +346,14 @@ module ibeam(width){
 //  Main Assembly
 // =============================================================================
 module denseGeometry(){
-    support(beamWidth);
+    intersection(){
+        fullGeometry();
+        union(){
+            cutouts(extra_infill_shell_clearance);
+            ibeam(beamWidth);
+        }
+    }
+    
 }
 module fullGeometry(){
     if (debug_mode) {
