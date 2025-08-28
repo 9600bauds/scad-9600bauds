@@ -72,10 +72,10 @@ topBendRadius = beamThickness;
 bottomEndRadius = beamThickness * 2;
 
 hb = beamThickness / 2;
-support_maxx = bottom_depth + extra_inner_offset - hb;
-support_minx = 0 + hb;
+support_minx = spigot_socket_diameter / 2 + hb;
+support_maxx = support_minx + bottom_depth  + hb;
+support_miny = bottom_thickness - beamThickness + hb;
 support_maxy = total_height - hb;
-support_miny = 0 + hb + (bottom_thickness - beamThickness);
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -244,10 +244,11 @@ module bottom_arm_solid() {
 }
 
 module middle_section_solid() {
-    chamfered_extrude(height=total_height, bottom_radius = bottom_chamfer_radius, top_radius = top_chamfer_radius)
-      middle_outline();
-    translate([spigot_socket_diameter / 2, 999/2, 0])
-      ibeam(999);
+    union(){
+        chamfered_extrude(height=total_height, bottom_radius = bottom_chamfer_radius, top_radius = top_chamfer_radius)
+          middle_outline();
+        ibeam(999);
+    }
 }
 
 module clamp_body() {
@@ -299,23 +300,30 @@ cbeamPath = [
     [support_minx, support_miny, bottomEndRadius],
     [support_maxx, support_miny, 0]  
 ];
-full_poly = beamChain(cbeamPath, beamThickness/2, -beamThickness/2); 
-top_poly  = beamChain(cbeamPath, beamThickness/2, beamThickness/2 -flangeThickness);
-bot_poly  = beamChain(cbeamPath, -beamThickness/2 + flangeThickness, -beamThickness/2);
-
-module fullbeam(width) rotate([(90), 0, 0]) linear_extrude(width) polygon(polyRound(full_poly, fnSmooth));
-module topFlange(width) rotate([(90), 0, 0]) linear_extrude(width) polygon(polyRound(top_poly, fnSmooth));
-module bottomFlange(width) rotate([(90), 0, 0]) linear_extrude(width) polygon(polyRound(bot_poly, fnSmooth));
-module middleWeb(width) rotate([(90), 0, 0]) translate([0, 0, width/3]) linear_extrude(width/3) polygon(polyRound(full_poly, fnSmooth));
+module full_beam_outline() polygon(polyRound(beamChain(cbeamPath, beamThickness/2, -beamThickness/2), fnSmooth)); 
+module top_flange_outline() polygon(polyRound(beamChain(cbeamPath, beamThickness/2, beamThickness/2 -flangeThickness), fnSmooth));
+module bot_flange_outline() polygon(polyRound(beamChain(cbeamPath, -beamThickness/2 + flangeThickness, -beamThickness/2), fnSmooth));
+//// --- DEBUG: Draw the centerline path in red ---
+//dbgPathRP = beamChain(cbeamPath, offset1=0.5, offset2=-0.5);
+//color("red") polygon(polyRound(dbgPathRP, fnSmooth));
+// --- DEBUG: Draw the abstract path in magenta ---
+//for(p = cbeamPath) {
+//  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
+//}
+    
+module fullbeam(width) linear_extrude(width) full_beam_outline();
+module topFlange(width) linear_extrude(width) top_flange_outline();
+module bottomFlange(width) linear_extrude(width) bot_flange_outline();
+module middleWeb(width) translate([0, 0, width/3]) linear_extrude(width/3) full_beam_outline();
 
 module gussets(width){
     module topGussetClippingArea(){
-        rotate([(90), 0, 0]) translate([support_minx + beamThickness + topBendRadius / 4, support_maxy - beamThickness - topBendRadius / 4, -999/2])
+        translate([support_minx + beamThickness + topBendRadius / 4, support_maxy - beamThickness - topBendRadius / 4, -999/2])
             rotate([0,0,90])
                 cube([999, 999, 999]);
     }
     module bottomGussetClippingArea(){
-        rotate([(90), 0, 0]) translate([support_minx + beamThickness + bottomEndRadius / 4, support_miny + beamThickness + bottomEndRadius / 4, -999/2])
+        translate([support_minx + beamThickness + bottomEndRadius / 4, support_miny + beamThickness + bottomEndRadius / 4, -999/2])
             rotate([0,0,180])
                 cube([999, 999, 999]);
     }
@@ -329,25 +337,14 @@ module gussets(width){
 }
     
 module ibeam(width){
-    union(){
-        middleWeb(width);
-        topFlange(width);
-        bottomFlange(width);
-        gussets(width);
-    }
-    
-    //// --- DEBUG: Draw the centerline path in red ---
-    //dbgPathRP = beamChain(cbeamPath, offset1=0.5, offset2=-0.5);
-    //color("red") polygon(polyRound(dbgPathRP, fnSmooth));
-    // --- DEBUG: Draw the abstract path in magenta ---
-    //for(p = cbeamPath) {
-    //  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
-    //}
-}
-
-module support(width){
-  translate([spigot_socket_diameter / 2, width/2, 0])
-    ibeam(width);
+    rotate([(90), 0, 0])
+        translate([0, 0, -width/2])
+            union(){
+                middleWeb(width);
+                topFlange(width);
+                bottomFlange(width);
+                gussets(width);
+            }
 }
 
 // =============================================================================
@@ -364,12 +361,9 @@ module fullGeometry(){
       // Render the cutouts in solid red.
       color("red") cutouts();
       // Render the support in solid black.
-      support(beamWidth);
+      ibeam(beamWidth);
       // Render the conceptual screw cap in solid blue.
-      //color("blue") desk_screw_cap();
-        
-
-        
+      //color("blue") desk_screw_cap();       
     } else {
           difference() {
             clamp_body();
