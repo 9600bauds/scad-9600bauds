@@ -15,7 +15,6 @@ spigot_diameter = 12.4; // [5:0.1:25] [mm] The outer diameter of the lamp's spig
 spigot_socket_length = 32; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
 spigot_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
 middle_wall_thickness = 6; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
-middle_fillet_radius = 2; // [0:0.5:10] [mm] The fillet radius for the inner wall.
 
 /* [Top Arm Parameters] */
 top_depth = 40; // [10:100] [mm] How far into the desk the top arm goes.
@@ -32,9 +31,11 @@ bottom_chamfer_radius = 1; // [0:0.5:3]
 /* [Desk Screw] */
 desk_hex_nut_size = 12.5; // [5:0.1:25] [mm] The flat-to-flat distance of the desk hexagonal nut.
 desk_hex_nut_thickness = 6.75; // [2:0.1:15] [mm] The thickness of the desk nut.
+desk_nut_clearance = 3;
 desk_screw_diameter = 7.8; // [2:0.1:15] [mm] The diameter of the desk screw.
 desk_screw_cap_diameter = 16; // [5:0.1:30] [mm] The diameter of the screw cap.
 desk_screw_cap_thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
+
 
 /* [Locking Screw] */
 side_screw_offset = 8.65; // [0:0.1:50] [mm] How far down from the top surface the side screw is, from the top.
@@ -43,14 +44,14 @@ side_hex_nut_thickness = 3.25; // [1:0.1:10] [mm] The thickness of the side nut.
 side_screw_diameter = 4; // [1:0.1:10] [mm] The diameter of the side screw.
 
 /* [Tolerances & Quality] */
-spigot_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for the spigot. Increase for looser fit.
+spigot_tolerance = 0.2; // [0:0.1:2] [mm] Tolerance (extra empty space) for the spigot. Increase for looser fit.
 hex_nut_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
 epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
 $fn = 32; // [16:128] Number of facets for curves. Higher is smoother.
 fnSmooth     = 8;    // smoothness for arcs/radii
 
 /* [Rendering options] */
-debug_mode = true; // Checkbox
+debug_mode = false; // Checkbox
 
 /* [Hidden] */
 // =============================================================================
@@ -69,11 +70,11 @@ beamThickness = middle_wall_thickness;
 beamWidth = spigot_socket_diameter;     
 flangeThickness = beamThickness / 4 ;
 topBendRadius = beamThickness;
-bottomEndRadius = beamThickness * 2;
+bottomEndRadius = beamThickness;
 
 hb = beamThickness / 2;
 support_minx = spigot_socket_diameter / 2 + hb;
-support_maxx = support_minx + bottom_depth  + hb;
+support_maxx = support_minx + bottom_depth; // + hb;
 support_miny = bottom_thickness - beamThickness + hb;
 support_maxy = total_height - hb;
 
@@ -179,23 +180,16 @@ module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dis
   }
 }
 
-module crop_sides(flat_face_dist){
-  intersection(){
+module crop_sides(){
     difference(){
       children();
       rotate([0, 0, 90 + taper_angle / 2])
-        translate([back_cylinder_diameter / 2, -999/2, -999/2])
+        translate([back_cylinder_diameter / 2 - 0.1, -999/2, -999/2])
             cube(999);
       rotate([0, 0, 90 - taper_angle / 2])
-        translate([-999 -back_cylinder_diameter / 2, -999/2, -999/2])
+        translate([-999 -back_cylinder_diameter / 2 + 0.1, -999/2, -999/2])
             cube(999);
     };
-    union(){
-      cylinder(999, back_cylinder_diameter / 2, back_cylinder_diameter / 2);
-      translate([0, -999/2, -999/2])
-        cube([back_cylinder_diameter / 2 + flat_face_dist, 999, 999]);
-    }
-  }
 }
 
 module chamfered_extrude(height, bottom_radius, top_radius) {
@@ -228,9 +222,9 @@ module screw_hole(d, h) {
 //  Clamp Solid Body Components
 // =============================================================================
 
-module top_arm_outline() rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset);
-module middle_outline() rounded_triangle(back_cylinder_diameter, middle_fillet_radius, taper_angle, 0);
-module bottom_outline() rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset);
+module middle_outline() rounded_triangle(back_cylinder_diameter, 0.01, taper_angle, 0);
+module bottom_outline() hull(){rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset); middle_outline();};
+module top_arm_outline() hull(){rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset); middle_outline();}
 
 module top_arm_solid() {
     translate([0, 0, total_height - top_thickness])
@@ -252,7 +246,7 @@ module middle_section_solid() {
 }
 
 module clamp_body() {
-  crop_sides(999)
+  crop_sides()
   union() {
     top_arm_solid();
     bottom_arm_solid();
@@ -276,7 +270,7 @@ module cutouts() {
   // Desk screw + hex socket in the bottom arm
   translate([bottom_arm_center, 0, 0]) { 
       screw_hole(d=desk_screw_diameter, h=bottom_thickness);
-      translate([0, 0, 3]) //todo variable for this 3
+      translate([0, 0, desk_nut_clearance])
       hex_pocket(size=desk_hex_nut_size, thickness=desk_hex_nut_thickness);
   }
   // Side screw + hex socket at the back
