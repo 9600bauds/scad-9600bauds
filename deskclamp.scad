@@ -2,6 +2,10 @@
 //  Parameters - Adjust these values to customize your clamp
 // =============================================================================
 
+/* [Preview Toggle] */
+// Preview either the full clamp, or the denser infill region (you will get both anyways!)
+part = "all"; // [all:Full Preview,dense:Denser Region]
+
 /* [Main Clamp Shape] */
 max_desk_thickness = 42; // [10:100] [mm] Maximum thickness of the desk/table.
 taper_angle = 15; // [0:45] Angle of the side taper.
@@ -9,13 +13,13 @@ taper_angle = 15; // [0:45] Angle of the side taper.
 /* [Middle Section] */
 spigot_diameter = 12.4; // [5:0.1:25] [mm] The outer diameter of the lamp's spigot.
 spigot_socket_length = 32; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
-spigot_wall_thickness = 4; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
-middle_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
+spigot_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
+middle_wall_thickness = 6; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
 middle_fillet_radius = 2; // [0:0.5:10] [mm] The fillet radius for the inner wall.
 
 /* [Top Arm Parameters] */
 top_depth = 40; // [10:100] [mm] How far into the desk the top arm goes.
-top_thickness = 5; // [2:0.5:15] [mm] The vertical thickness of the top arm.
+top_thickness = 6; // [2:0.5:15] [mm] The vertical thickness of the top arm.
 top_fillet_radius = 6; // [0:0.5:20] [mm] The fillet radius of the top arm.
 top_chamfer_radius = 1; // [0:0.5:3]
 
@@ -71,7 +75,7 @@ hb = beamThickness / 2;
 support_maxx = bottom_depth + extra_inner_offset - hb;
 support_minx = 0 + hb;
 support_maxy = total_height - hb;
-support_miny = 0 + hb;
+support_miny = 0 + hb + (bottom_thickness - beamThickness);
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -175,7 +179,7 @@ module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dis
   }
 }
 
-module crop_to_shape(flat_face_dist){
+module crop_sides(flat_face_dist){
   intersection(){
     difference(){
       children();
@@ -225,27 +229,29 @@ module screw_hole(d, h) {
 // =============================================================================
 
 module top_arm_outline() rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset);
-module middle_outline() rounded_triangle(back_cylinder_diameter, middle_fillet_radius, taper_angle, extra_inner_offset);
+module middle_outline() rounded_triangle(back_cylinder_diameter, middle_fillet_radius, taper_angle, 0);
 module bottom_outline() rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset);
 
 module top_arm_solid() {
     translate([0, 0, total_height - top_thickness])
-      chamfered_extrude(height = top_thickness, bottom_radius = 0, top_radius = top_chamfer_radius)
+      linear_extrude(height = top_thickness)
         top_arm_outline();
 }
 
 module bottom_arm_solid() {
-    chamfered_extrude(height = bottom_thickness, bottom_radius = bottom_chamfer_radius, top_radius = bottom_chamfer_radius)
+    linear_extrude(height = bottom_thickness)
       bottom_outline();
 }
 
 module middle_section_solid() {
     chamfered_extrude(height=total_height, bottom_radius = bottom_chamfer_radius, top_radius = top_chamfer_radius)
       middle_outline();
-    crop_to_shape(bottom_depth) translate([spigot_socket_diameter / 2, 999/2, 0]) ibeam(999);
+    translate([spigot_socket_diameter / 2, 999/2, 0])
+      ibeam(999);
 }
 
 module clamp_body() {
+  crop_sides(999)
   union() {
     top_arm_solid();
     bottom_arm_solid();
@@ -267,9 +273,10 @@ module cutouts() {
     screw_hole(d=spigot_socket_diameter, h=spigot_socket_length);
   }
   // Desk screw + hex socket in the bottom arm
-  translate([bottom_arm_center, 0, 0]) {
-    screw_hole(d=desk_screw_diameter, h=bottom_thickness);
-    hex_pocket(size=desk_hex_nut_size, thickness=desk_hex_nut_thickness);
+  translate([bottom_arm_center, 0, 0]) { 
+      screw_hole(d=desk_screw_diameter, h=bottom_thickness);
+      translate([0, 0, 3]) //todo variable for this 3
+      hex_pocket(size=desk_hex_nut_size, thickness=desk_hex_nut_thickness);
   }
   // Side screw + hex socket at the back
   translate([(back_cylinder_diameter / -2), 0, total_height - side_screw_offset]) {
@@ -346,10 +353,10 @@ module support(width){
 // =============================================================================
 //  Main Assembly
 // =============================================================================
-
-
-//translate([0, 0, print_orientation_z_offset])
-  //rotate([-(90), -taper_angle / 2, 0])
+module denseGeometry(){
+    support(beamWidth);
+}
+module fullGeometry(){
     if (debug_mode) {
       // Render the main body with the '%' modifier.
       // This makes it transparent in the preview, like an x-ray.
@@ -359,7 +366,7 @@ module support(width){
       // Render the support in solid black.
       support(beamWidth);
       // Render the conceptual screw cap in solid blue.
-      color("blue") desk_screw_cap();
+      //color("blue") desk_screw_cap();
         
 
         
@@ -369,8 +376,14 @@ module support(width){
             cutouts();
           }
     }
-
-
+}
+//translate([0, 0, print_orientation_z_offset])
+  //rotate([-(90), -taper_angle / 2, 0])
+    if (part == "all") {
+        fullGeometry();
+    } else if (part == "dense") {
+        denseGeometry();
+    }
 
 // =============================================================================
 //  External Libraries
