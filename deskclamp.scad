@@ -39,77 +39,109 @@
 // Preview either the full clamp, or the denser infill region (you will get both anyways!)
 part = "all"; // [all:Full Preview,dense:Denser Region]
 
-/* [Main Clamp Shape] */
-max_desk_thickness = 42; // [10:100] [mm] Maximum thickness of the desk/table.
-taper_angle = 15; // [0:45] Angle of the side taper.
+/* [Main Dimensions] */
+//[mm]
+Max_Desk_Thickness = 42; // [10:100]
+// [mm] The outer diameter of the spigot for your lamp/mic/whatever.
+Spigot_Diameter = 12.5; // [5:0.1:40]
+// [mm] Tolerance (extra empty space) for the spigot socket. Increase for looser fit. Recommended: 0.2-0-4.
+Spigot_Tolerance = 0.2; // [0:0.1:1]
+// [mm] How deep your spigot fits into the spigot socket, from the top.
+Spigot_Socket_Height = 31.5; // [10:100]
+// [mm] How far into the top of the desk the top arm goes.
+Top_Arm_Length = 40; // [10:100]
+// [mm] How far into the underside of the desk the bottom arm goes. The sides of your desk might have reduced space on the underside.
+Bottom_Arm_Length = 20; // [10:100] 
 
-/* [Middle Section] */
-spigot_diameter = 12.5; // [5:0.1:25] [mm] The outer diameter of the lamp's spigot.
-spigot_socket_length = 31.5; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
-spigot_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
-middle_wall_thickness = 6; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
-extra_infill_shell_clearance = 3;
+/* [Desk Underside Screw] */
+// [mm] The major diameter (max, thread-end-to-thread-end) of the desk screw.
+Desk_Screw_Diameter = 7.8; // [4:0.1:15]
+// Choose whether you want to print a plastic screw or provide your own metal screw and matching hex nut.
+Desk_Screw_Type = "Printed"; // [Printed,Metal]
+// [mm] The length of the desk screw's thread. Ignore if you opted to provide a metal screw. If 0, will auto-calculate.
+Desk_Screw_Thread_Length = 0; // [0:90]
+// [mm] The flat-to-flat distance of the desk hex nut. Ignore if you opted to print a plastic screw.
+Desk_Hex_Nut_Size = 12.5; // [5:0.1:25]
+// [mm] The thickness of the desk hex nut. Ignore if you opted to print a plastic screw.
+Desk_Hex_Nut_Thickness = 6.75; // [2:0.1:15] 
+// [mm] The extra clearance given for the desk hex nut. Ignore if you opted to print a plastic screw.
+Desk_Hex_Nut_Clearance = 1.2;
 
-/* [Top Arm Parameters] */
-top_depth = 40; // [10:100] [mm] How far into the desk the top arm goes.
-top_thickness = 6; // [2:0.5:15] [mm] The vertical thickness of the top arm.
-top_fillet_radius = 6; // [0:0.5:20] [mm] The fillet radius of the top arm.
-top_chamfer_radius = 1; // [0:0.5:3]
+Desk_Screw_Cap_Diameter = 16; // [5:0.1:30] [mm] The diameter of the screw cap.
+Desk_Screw_Cap_Thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
 
-/* [Bottom Arm Parameters] */
-bottom_depth = 20; // [10:100] [mm] How far into the desk the bottom arm goes.
-bottom_thickness = 7; // [2:0.5:15] [mm] The vertical thickness of the bottom arm.
-bottom_rounding_radius = 6; // [0:0.5:20] [mm] The fillet radius of the bottom arm.
-bottom_chamfer_radius = 1; // [0:0.5:3]
+/* [Spigot Side Screw] */
+// [mm] How far down into the spigot socket the center of the side screw will be. If 0, will auto-calculate. (todo)
+Side_Screw_Offset = 15.75; // [0:0.1:50]
+// [mm] The major diameter (max, thread-end-to-thread-end) of the side screw.
+Side_Screw_Diameter = 3.95; // [3:0.1:10]
+// Choose whether you want to print a plastic screw or provide your own metal screw and matching hex nut.
+Spigot_Screw_Type = "Printed"; // [Printed,Metal]
+// [mm] The length of the side screw's thread. Ignore if you opted to provide a metal screw. If 0, will auto-calculate.
+Side_Screw_Thread_Length = 0; // [0:35]
+// [mm] The flat-to-flat distance of the side hex nut. Ignore if you opted to print a plastic screw.
+Side_Hex_Nut_Size = 7.9; // [2:0.1:15]
+// [mm] The thickness of the side hex nut. Ignore if you opted to print a plastic screw.
+Side_Hex_Nut_Thickness = 3.25; // [1:0.1:10]
 
-/* [Desk Screw] */
-desk_hex_nut_size = 12.5; // [5:0.1:25] [mm] The flat-to-flat distance of the desk hexagonal nut.
-desk_hex_nut_thickness = 6.75; // [2:0.1:15] [mm] The thickness of the desk nut.
-desk_nut_clearance = 3;
-desk_screw_diameter = 7.8; // [2:0.1:15] [mm] The diameter of the desk screw.
-desk_screw_cap_diameter = 16; // [5:0.1:30] [mm] The diameter of the screw cap.
-desk_screw_cap_thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
+/* [Cosmetics] */
+//[deg] Angle of the side taper.
+Taper_Angle = 15; // [0:45]
+//[mm] The fillet radius of the top arm corners.
+Top_Fillet_Radius = 6; // [0:0.5:20]
+//Todo
+Top_Chamfer_Radius = 1; // [0:0.5:3]
+//[mm] The fillet radius of the bottom arm corners.
+Bottom_Fillet_Radius = 6; // [0:0.5:20] 
+//Todo
+Bottom_Chamfer_Radius = 1; // [0:0.5:3]
 
+/* [Support And Thickness] */
+// [mm] Wall thickness of the shell around the lamp spigot (thicker = sturdier but bigger).
+Spigot_Shell_Thickness = 5; // [2:0.5:15]
+// [mm] Thickness of the interior infill shell around some parts.
+Extra_Interior_Infill_Thickness = 3;
+// [mm] Thickness of the side wall connecting the top and bottom arms.
+Middle_Wall_Thickness = 6; // [2:0.5:15]
+// [mm] Extra thickness on the top arm. Probably unnecessary.
+Extra_Top_Arm_Thickness = 0;
+// [mm] Extra thickness on the bottom arm. Might be desirable if you're using a thick metal nut.
+Extra_Bottom_Arm_Thickness = 0;
 
-/* [Locking Screw] */
-side_screw_offset = 15.75; // [0:0.1:50] [mm] How far down from the top surface the side screw is, from the top.
-side_hex_nut_size = 7.9; // [2:0.1:15] [mm] The flat-to-flat distance of the side hexagonal nut.
-side_hex_nut_thickness = 3.25; // [1:0.1:10] [mm] The thickness of the side nut.
-side_screw_diameter = 3.95; // [1:0.1:10] [mm] The diameter of the side screw.
-
-/* [Tolerances & Quality] */
-spigot_tolerance = 0.2; // [0:0.1:2] [mm] Tolerance (extra empty space) for the spigot. Increase for looser fit.
-hex_nut_tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
-epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
+/* [Tolerances And Quality] */
+Hex_Nut_Tolerance = 0.4; // [0:0.1:2] [mm] Tolerance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
+Epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
 $fn = 32; // [16:128] Number of facets for curves. Higher is smoother.
-fnSmooth     = 8;    // smoothness for arcs/radii
+fnBeam = 8; // [8:64] Number of facets for the interior reinforcement beam.
 
 /* [Rendering options] */
-debug_mode = false; // Checkbox
+Debug_Mode = false; // Checkbox
 
 /* [Hidden] */
 // =============================================================================
 //  Derived Variables
 // =============================================================================
 
-middle_wall_height = max_desk_thickness + desk_screw_cap_thickness;
+middle_wall_height = Max_Desk_Thickness + Desk_Screw_Cap_Thickness;
+top_thickness = Middle_Wall_Thickness + Extra_Top_Arm_Thickness;
+bottom_thickness = Middle_Wall_Thickness + Extra_Bottom_Arm_Thickness;
 total_height = top_thickness + middle_wall_height + bottom_thickness;
-spigot_socket_diameter = spigot_diameter + spigot_tolerance;
-back_cylinder_diameter = spigot_socket_diameter + spigot_wall_thickness * 2;
-extra_inner_offset = middle_wall_thickness - spigot_wall_thickness;
-bottom_arm_center = (spigot_socket_diameter / 2) + middle_wall_thickness + bottom_depth / 2;
-print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(taper_angle / 2);
+spigot_socket_diameter = Spigot_Diameter + Spigot_Tolerance;
+back_cylinder_diameter = spigot_socket_diameter + Spigot_Shell_Thickness * 2;
+extra_inner_offset = Middle_Wall_Thickness - Spigot_Shell_Thickness;
+bottom_arm_center = (spigot_socket_diameter / 2) + Middle_Wall_Thickness + Bottom_Arm_Length / 2;
+print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(Taper_Angle / 2);
 
-beamThickness = middle_wall_thickness;
-beamWidth = spigot_socket_diameter;     
-flangeThickness = beamThickness / 3 ;
-topBendRadius = beamThickness;
-bottomEndRadius = beamThickness;
+beam_thickness = Middle_Wall_Thickness;
+beam_width = spigot_socket_diameter;     
+flange_thickness = beam_thickness / 3;
+top_bend_radius = beam_thickness;
+bottom_end_radius = beam_thickness;
 
-hb = beamThickness / 2;
+hb = beam_thickness / 2;
 support_minx = spigot_socket_diameter / 2 + hb;
-support_maxx = support_minx + bottom_depth; // + hb;
-support_miny = bottom_thickness - beamThickness + hb;
+support_maxx = support_minx + Bottom_Arm_Length; // + hb;
+support_miny = bottom_thickness - beam_thickness + hb;
 support_maxy = total_height - hb;
 
 // =============================================================================
@@ -119,58 +151,58 @@ support_maxy = total_height - hb;
 // --- Critical Errors (will stop rendering) ---
 
 // Check that essential dimensions are positive values
-assert(max_desk_thickness > 0, "ERROR: max_desk_thickness must be a positive value.");
+assert(Max_Desk_Thickness > 0, "ERROR: Max_Desk_Thickness must be a positive value.");
 assert(top_thickness > 0, "ERROR: top_thickness must be a positive value.");
 assert(bottom_thickness > 0, "ERROR: bottom_thickness must be a positive value.");
-assert(spigot_diameter > 0, "ERROR: spigot_diameter must be a positive value.");
-assert(spigot_wall_thickness > 0, "ERROR: spigot_wall_thickness must be a positive value.");
-assert(middle_wall_thickness > 0, "ERROR: middle_wall_thickness must be a positive value.");
+assert(Spigot_Diameter > 0, "ERROR: Spigot_Diameter must be a positive value.");
+assert(Spigot_Shell_Thickness > 0, "ERROR: Spigot_Shell_Thickness must be a positive value.");
+assert(Middle_Wall_Thickness > 0, "ERROR: Middle_Wall_Thickness must be a positive value.");
 
 // Check if the side screw is logically placed to actually hit the spigot
 assert(
-  side_screw_offset <= spigot_socket_length,
-  str("ERROR: Side screw offset (", side_screw_offset, ") is below the spigot socket (length: ", spigot_socket_length, "). The screw will not engage with the spigot. Increase spigot_socket_length or decrease side_screw_offset.")
+  Side_Screw_Offset <= Spigot_Socket_Height,
+  str("ERROR: Side screw offset (", Side_Screw_Offset, ") is below the spigot socket (length: ", Spigot_Socket_Height, "). The screw will not engage with the spigot. Increase Spigot_Socket_Height or decrease Side_Screw_Offset.")
 );
 
 // Check if the bottom arm is deep enough for the screw/screw nut
 assert(
-  bottom_depth > desk_screw_diameter,
-  str("ERROR: Bottom arm depth (", bottom_depth, ") is not enough to fit the desk screw (diameter: ", desk_screw_diameter, "). Increase bottom_depth, or decrease desk_screw_diameter (not recommended).")
+  Bottom_Arm_Length > Desk_Screw_Diameter,
+  str("ERROR: Bottom arm depth (", Bottom_Arm_Length, ") is not enough to fit the desk screw (diameter: ", Desk_Screw_Diameter, "). Increase Bottom_Arm_Length, or decrease Desk_Screw_Diameter (not recommended).")
 );
 assert(
-  bottom_depth > desk_hex_nut_size,
-  str("ERROR: Bottom arm depth (", bottom_depth, ") is not enough to fit the desk hex nut (diameter: ", desk_hex_nut_size, "). Increase bottom_depth, or decrease desk_hex_nut_size (not recommended).")
+  Bottom_Arm_Length > Desk_Hex_Nut_Size,
+  str("ERROR: Bottom arm depth (", Bottom_Arm_Length, ") is not enough to fit the desk hex nut (diameter: ", Desk_Hex_Nut_Size, "). Increase Bottom_Arm_Length, or decrease Desk_Hex_Nut_Size (not recommended).")
 );
 
 // Check if the screw cap fits
 assert(
-  bottom_depth >= desk_screw_cap_diameter,
-  str("ERROR: Bottom arm depth (", bottom_depth, ") is not enough to fit the screw cap (diameter: ", desk_screw_cap_diameter, "). Increase bottom_depth, or decrease desk_screw_cap_diameter.")
+  Bottom_Arm_Length >= Desk_Screw_Cap_Diameter,
+  str("ERROR: Bottom arm depth (", Bottom_Arm_Length, ") is not enough to fit the screw cap (diameter: ", Desk_Screw_Cap_Diameter, "). Increase Bottom_Arm_Length, or decrease Desk_Screw_Cap_Diameter.")
 );
 assert(
-  desk_screw_cap_diameter > desk_screw_diameter + 0.4,
-  str("ERROR: Screw cap (diameter: ", desk_screw_cap_diameter, ") is not wide enough for the actual screw (diameter: ", desk_screw_diameter, "). Increase desk_screw_cap_diameter, or decrease desk_screw_diameter (not recommended).")
+  Desk_Screw_Cap_Diameter > Desk_Screw_Diameter + 0.4,
+  str("ERROR: Screw cap (diameter: ", Desk_Screw_Cap_Diameter, ") is not wide enough for the actual screw (diameter: ", Desk_Screw_Diameter, "). Increase Desk_Screw_Cap_Diameter, or decrease Desk_Screw_Diameter (not recommended).")
 );
 
 // --- Non-Critical Warnings (will print to console) ---
 
 // Check if nut pockets too thick for the parts they're in
-if (desk_hex_nut_thickness + epsilon + 0.8 > bottom_thickness) {
-  echo(str("WARNING: Desk nut thickness (", desk_hex_nut_thickness, ") is too much for the bottom arm thickness (", bottom_thickness, "). The nut may break through the bottom."));
+if (Desk_Hex_Nut_Thickness + Epsilon + 0.8 > bottom_thickness) {
+  echo(str("WARNING: Desk nut thickness (", Desk_Hex_Nut_Thickness, ") is too much for the bottom arm thickness (", bottom_thickness, "). The nut may break through the bottom."));
 }
-if (side_hex_nut_thickness + epsilon + 0.8 > spigot_wall_thickness) {
-  echo(str("WARNING: Side nut thickness (", side_hex_nut_thickness, ") is too much for the spigot wall thickness (", spigot_wall_thickness, "). The nut may break through into the spigot socket."));
+if (Side_Hex_Nut_Thickness + Epsilon + 0.8 > Spigot_Shell_Thickness) {
+  echo(str("WARNING: Side nut thickness (", Side_Hex_Nut_Thickness, ") is too much for the spigot wall thickness (", Spigot_Shell_Thickness, "). The nut may break through into the spigot socket."));
 }
 
 // Check if the side screw is too close to the top edge
-if (side_screw_offset < (side_hex_nut_size / 2) + 1) {
+if (Side_Screw_Offset < (Side_Hex_Nut_Size / 2) + 1) {
   // Nut radius + 1mm of wall
-  echo(str("WARNING: Side screw offset (", side_screw_offset, ") is very close to the top surface. There may not be enough material above the nut for strength."));
+  echo(str("WARNING: Side screw offset (", Side_Screw_Offset, ") is very close to the top surface. There may not be enough material above the nut for strength."));
 }
 
 // Check for potentially weak, thin walls
-if (middle_wall_thickness < 3) {
-  echo(str("WARNING: Middle wall thickness is very thin (", middle_wall_thickness, "mm). The clamp may be weak. Consider increasing it."));
+if (Middle_Wall_Thickness < 3) {
+  echo(str("WARNING: Middle wall thickness is very thin (", Middle_Wall_Thickness, "mm). The clamp may be weak. Consider increasing it."));
 }
 if (top_thickness < 4) {
   echo(str("WARNING: Top arm thickness is very thin (", top_thickness, "mm). The clamp may be weak. Consider increasing it."));
@@ -178,15 +210,15 @@ if (top_thickness < 4) {
 if (bottom_thickness < 4) {
   echo(str("WARNING: Bottom arm thickness is very thin (", bottom_thickness, "mm). The clamp may be weak. Consider increasing it."));
 }
-if (spigot_tolerance > 1) {
-  echo(str("WARNING: Spigot tolerance is high (", spigot_tolerance, "mm). The spigot may have a very loose fit."));
+if (Spigot_Tolerance > 1) {
+  echo(str("WARNING: Spigot tolerance is high (", Spigot_Tolerance, "mm). The spigot may have a very loose fit."));
 }
 
 // =============================================================================
 //  Helper Modules
 // =============================================================================
 
-module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dist) {
+module rounded_triangle(big_diameter, small_diameter, Taper_Angle, flat_face_dist) {
   R = big_diameter / 2;
   r = small_diameter / 2;
 
@@ -194,7 +226,7 @@ module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dis
   // tangent to a vertical line and the two sides of the taper.
 
   // Slope of the tapered sides
-  m = tan(taper_angle / 2);
+  m = tan(Taper_Angle / 2);
   // Secant of the half-angle, used to find the y-intercept of the tangent line
   S = sqrt(1 + m * m);
 
@@ -217,10 +249,10 @@ module rounded_triangle(big_diameter, small_diameter, taper_angle, flat_face_dis
 module crop_sides(){
     difference(){
       children();
-      rotate([0, 0, 90 + taper_angle / 2])
+      rotate([0, 0, 90 + Taper_Angle / 2])
         translate([back_cylinder_diameter / 2 - 0.1, -999/2, -999/2])
             cube(999);
-      rotate([0, 0, 90 - taper_angle / 2])
+      rotate([0, 0, 90 - Taper_Angle / 2])
         translate([-999 -back_cylinder_diameter / 2 + 0.1, -999/2, -999/2])
             cube(999);
     };
@@ -244,21 +276,21 @@ module chamfered_extrude(height, bottom_radius, top_radius) {
     }
 }
 
-module hex_pocket(size, thickness, tol = hex_nut_tolerance) {
+module hex_pocket(size, thickness, tol = Hex_Nut_Tolerance) {
   r = (size / 2) / cos(30); // Apothecary to radius conversion for hexagon
-  translate([0, 0, -epsilon]) cylinder(h=thickness + 2 * epsilon, r=r + tol, $fn=6);
+  translate([0, 0, -Epsilon]) cylinder(h=thickness + 2 * Epsilon, r=r + tol, $fn=6);
 }
 module screw_hole(d, h) {
-  translate([0, 0, -epsilon]) cylinder(h=h + 2 * epsilon, d=d);
+  translate([0, 0, -Epsilon]) cylinder(h=h + 2 * Epsilon, d=d);
 }
 
 // =============================================================================
 //  Clamp Solid Body Components
 // =============================================================================
 
-module middle_outline() rounded_triangle(back_cylinder_diameter, 0.01, taper_angle, 0);
-module bottom_outline() hull(){rounded_triangle(back_cylinder_diameter, bottom_rounding_radius, taper_angle, bottom_depth + extra_inner_offset); middle_outline();};
-module top_arm_outline() hull(){rounded_triangle(back_cylinder_diameter, top_fillet_radius, taper_angle, top_depth + extra_inner_offset); middle_outline();}
+module middle_outline() rounded_triangle(back_cylinder_diameter, 0.01, Taper_Angle, 0);
+module bottom_outline() hull(){rounded_triangle(back_cylinder_diameter, Bottom_Fillet_Radius, Taper_Angle, Bottom_Arm_Length + extra_inner_offset); middle_outline();};
+module top_arm_outline() hull(){rounded_triangle(back_cylinder_diameter, Top_Fillet_Radius, Taper_Angle, Top_Arm_Length + extra_inner_offset); middle_outline();}
 
 module top_arm_solid() {
     translate([0, 0, total_height - top_thickness])
@@ -273,7 +305,7 @@ module bottom_arm_solid() {
 
 module middle_section_solid() {
     union(){
-        chamfered_extrude(height=total_height, bottom_radius = bottom_chamfer_radius, top_radius = top_chamfer_radius)
+        chamfered_extrude(height=total_height, bottom_radius = Bottom_Chamfer_Radius, top_radius = Top_Chamfer_Radius)
           middle_outline();
         ibeam(999);
     }
@@ -290,7 +322,7 @@ module clamp_body() {
 
 module desk_screw_cap() {
   translate([bottom_arm_center, 0, bottom_thickness])
-    cylinder(d=desk_screw_cap_diameter, h=desk_screw_cap_thickness);
+    cylinder(d=Desk_Screw_Cap_Diameter, h=Desk_Screw_Cap_Thickness);
 }
 
 // =============================================================================
@@ -300,18 +332,18 @@ module cutouts(offset = 0) {
   // Hole for the spigot
   translate([0, 0, total_height])
     rotate([0, 180, 0])
-        screw_hole(d=spigot_socket_diameter + offset, h=spigot_socket_length + offset);
+        screw_hole(d=spigot_socket_diameter + offset, h=Spigot_Socket_Height + offset);
   // Desk screw + hex socket in the bottom arm
   translate([bottom_arm_center, 0, 0]) { 
-      screw_hole(d=desk_screw_diameter + offset, h=bottom_thickness + offset);
-      translate([0, 0, desk_nut_clearance - offset])
-      hex_pocket(size=desk_hex_nut_size + offset, thickness=desk_hex_nut_thickness + offset);
+      screw_hole(d=Desk_Screw_Diameter + offset, h=bottom_thickness + offset);
+      translate([0, 0, Desk_Hex_Nut_Clearance - offset])
+      hex_pocket(size=Desk_Hex_Nut_Size + offset, thickness=Desk_Hex_Nut_Thickness + offset);
   }
   // Side screw + hex socket at the back
-  translate([(back_cylinder_diameter / -2), 0, total_height - side_screw_offset]) {
+  translate([(back_cylinder_diameter / -2), 0, total_height - Side_Screw_Offset]) {
     rotate([0, 90, 0]) {
-      screw_hole(d=side_screw_diameter + offset, h=back_cylinder_diameter / 2 + offset);
-      hex_pocket(size=side_hex_nut_size + offset, thickness=side_hex_nut_thickness + offset);
+      screw_hole(d=Side_Screw_Diameter + offset, h=back_cylinder_diameter / 2 + offset);
+      hex_pocket(size=Side_Hex_Nut_Size + offset, thickness=Side_Hex_Nut_Thickness + offset);
     }
   }
 }
@@ -321,19 +353,19 @@ module cutouts(offset = 0) {
 // =============================================================================
 
 cbeamPath = [    
-    //[support_maxx, support_maxy - topBendRadius / 2, 0],
-    //[support_minx + topBendRadius * 2, support_maxy - topBendRadius / 2, topBendRadius],
+    //[support_maxx, support_maxy - top_bend_radius / 2, 0],
+    //[support_minx + top_bend_radius * 2, support_maxy - top_bend_radius / 2, top_bend_radius],
     [support_maxx, support_maxy, 0],
-    [support_minx, support_maxy, topBendRadius],
-    [support_minx, support_miny, bottomEndRadius],
+    [support_minx, support_maxy, top_bend_radius],
+    [support_minx, support_miny, bottom_end_radius],
     [support_maxx, support_miny, 0]  
 ];
-module full_beam_outline() polygon(polyRound(beamChain(cbeamPath, beamThickness/2, -beamThickness/2), fnSmooth)); 
-module top_flange_outline() polygon(polyRound(beamChain(cbeamPath, beamThickness/2, beamThickness/2 -flangeThickness), fnSmooth));
-module bot_flange_outline() polygon(polyRound(beamChain(cbeamPath, -beamThickness/2 + flangeThickness, -beamThickness/2), fnSmooth));
+module full_beam_outline() polygon(polyRound(beamChain(cbeamPath, beam_thickness/2, -beam_thickness/2), fnBeam)); 
+module top_flange_outline() polygon(polyRound(beamChain(cbeamPath, beam_thickness/2, beam_thickness/2 -flange_thickness), fnBeam));
+module bot_flange_outline() polygon(polyRound(beamChain(cbeamPath, -beam_thickness/2 + flange_thickness, -beam_thickness/2), fnBeam));
 //// --- DEBUG: Draw the centerline path in red ---
 //dbgPathRP = beamChain(cbeamPath, offset1=0.5, offset2=-0.5);
-//color("red") polygon(polyRound(dbgPathRP, fnSmooth));
+//color("red") polygon(polyRound(dbgPathRP, fnBeam));
 // --- DEBUG: Draw the abstract path in magenta ---
 //for(p = cbeamPath) {
 //  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
@@ -346,12 +378,12 @@ module middleWeb(width) translate([0, 0, width/3]) linear_extrude(width/3) full_
 
 module gussets(width){
     module topGussetClippingArea(){
-        translate([support_minx + beamThickness + topBendRadius / 4, support_maxy - beamThickness - topBendRadius / 4, -999/2])
+        translate([support_minx + beam_thickness + top_bend_radius / 4, support_maxy - beam_thickness - top_bend_radius / 4, -999/2])
             rotate([0,0,90])
                 cube([999, 999, 999]);
     }
     module bottomGussetClippingArea(){
-        translate([support_minx + beamThickness + bottomEndRadius / 4, support_miny + beamThickness + bottomEndRadius / 4, -999/2])
+        translate([support_minx + beam_thickness + bottom_end_radius / 4, support_miny + beam_thickness + bottom_end_radius / 4, -999/2])
             rotate([0,0,180])
                 cube([999, 999, 999]);
     }
@@ -382,21 +414,21 @@ module denseGeometry(){
     intersection(){
         fullGeometry();
         union(){
-            cutouts(extra_infill_shell_clearance);
-            ibeam(beamWidth);
+            cutouts(Extra_Interior_Infill_Thickness);
+            ibeam(beam_width);
         }
     }
     
 }
 module fullGeometry(){
-    if (debug_mode) {
+    if (Debug_Mode) {
       // Render the main body with the '%' modifier.
       // This makes it transparent in the preview, like an x-ray.
       %clamp_body();
       // Render the cutouts in solid red.
       color("red") cutouts();
       // Render the support in solid black.
-      ibeam(beamWidth);
+      ibeam(beam_width);
       // Render the conceptual screw cap in solid blue.
       //color("blue") desk_screw_cap();       
     } else {
