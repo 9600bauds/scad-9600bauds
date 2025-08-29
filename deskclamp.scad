@@ -11,11 +11,11 @@ max_desk_thickness = 42; // [10:100] [mm] Maximum thickness of the desk/table.
 taper_angle = 15; // [0:45] Angle of the side taper.
 
 /* [Middle Section] */
-spigot_diameter = 12.4; // [5:0.1:25] [mm] The outer diameter of the lamp's spigot.
-spigot_socket_length = 32; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
+spigot_diameter = 12.5; // [5:0.1:25] [mm] The outer diameter of the lamp's spigot.
+spigot_socket_length = 31.5; // [10:100] [mm] How deep the spigot fits into the clamp, from the top.
 spigot_wall_thickness = 5; // [2:0.5:15] [mm] Thickness of the outer cylinder around the lamp spigot.
 middle_wall_thickness = 6; // [2:0.5:15] [mm] Thickness of the wall connecting the top and bottom arms.
-extra_infill_shell_clearance = 5;
+extra_infill_shell_clearance = 3;
 
 /* [Top Arm Parameters] */
 top_depth = 40; // [10:100] [mm] How far into the desk the top arm goes.
@@ -39,10 +39,10 @@ desk_screw_cap_thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
 
 
 /* [Locking Screw] */
-side_screw_offset = 8.65; // [0:0.1:50] [mm] How far down from the top surface the side screw is, from the top.
+side_screw_offset = 15.75; // [0:0.1:50] [mm] How far down from the top surface the side screw is, from the top.
 side_hex_nut_size = 7.9; // [2:0.1:15] [mm] The flat-to-flat distance of the side hexagonal nut.
 side_hex_nut_thickness = 3.25; // [1:0.1:10] [mm] The thickness of the side nut.
-side_screw_diameter = 4; // [1:0.1:10] [mm] The diameter of the side screw.
+side_screw_diameter = 3.95; // [1:0.1:10] [mm] The diameter of the side screw.
 
 /* [Tolerances & Quality] */
 spigot_tolerance = 0.2; // [0:0.1:2] [mm] Tolerance (extra empty space) for the spigot. Increase for looser fit.
@@ -69,7 +69,7 @@ print_orientation_z_offset = (back_cylinder_diameter / 2) * cos(taper_angle / 2)
 
 beamThickness = middle_wall_thickness;
 beamWidth = spigot_socket_diameter;     
-flangeThickness = beamThickness / 4 ;
+flangeThickness = beamThickness / 3 ;
 topBendRadius = beamThickness;
 bottomEndRadius = beamThickness;
 
@@ -373,8 +373,8 @@ module fullGeometry(){
           }
     }
 }
-//translate([0, 0, print_orientation_z_offset])
-  //rotate([-(90), -taper_angle / 2, 0])
+translate([0, 0, print_orientation_z_offset])
+  rotate([-(90), -taper_angle / 2, 0])
     if (part == "all") {
         fullGeometry();
     } else if (part == "dense") {
