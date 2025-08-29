@@ -1,3 +1,36 @@
+// This bundled .scad file is distributed under the GNU Lesser General Public License v3.0.
+//   SPDX-License-Identifier: LGPL-3.0-or-later
+//
+// Although my original code is licensed under MIT, it uses portions of
+// libraries that are licensed under LGPL-3. Due to limitations of certain
+// platforms that only allow one .scad file per entry, I must thus
+// distribute it as a bundled file that includes portions from these
+// libraries, and the bundle must then be licensed under LGPL-3 as well.
+//
+// You must preserve all original copyright and license notices, which are
+// included below in the sections for each library.
+// You should have received a copy of the following licenses with this file,
+// or you can view them at:
+//   - MIT License:      https://opensource.org/licenses/MIT
+//   - GPL v3.0 License:   https://www.gnu.org/licenses/gpl-3.0.html
+//   - LGPL v3.0 License:  https://www.gnu.org/licenses/lgpl-3.0.html
+//
+// CODE ORIGINS & ATTRIBUTION:
+//
+//   - The main clamp design and structure (My Original Code):
+//     Copyright (c) 2025 9600bauds
+//     Licensed under the MIT License.
+//
+//   - Portions from the "round-anything" library:
+//     Copyright (c) 2020 IrevDev
+//     https://github.com/Irev-Dev/Round-Anything/
+//     Licensed under the MIT License.
+//
+//   - Portions from the "scad-lib-FDMscrews" library:
+//     Copyright (c) 2016-2017 Lukas M. Süss aka mechadense
+//     https://github.com/mechadense/scad-lib-FDMscrews
+//     Licensed under the GNU LGPL v3.0.
+
 // =============================================================================
 //  Parameters - Adjust these values to customize your clamp
 // =============================================================================
@@ -382,25 +415,10 @@ translate([0, 0, print_orientation_z_offset])
     }
 
 // =============================================================================
-//  External Libraries
+//  The rest of this file is external libraries.
+//  They must be included in this .scad file rather than imported externally,
+//  due to limitations of certain platforms that only allow one .scad file per entry.
 // =============================================================================
-
-// The following is an unmodified copy of polyround.scad from the round-anything library,
-// taken from: https://github.com/Irev-Dev/Round-Anything/
-// It must be copied into this .scad file rather than imported as an external file,
-// due to limitations of certain platforms that only allow one .scad file per entry.
-
-// The following library code is included verbatim and is licensed under MIT:
-// -----------------------------------------------------------------------------
-// Copyright 2020 Kurt Hutten
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// -----------------------------------------------------------------------------
 
 // Library: round-anything
 // Version: 1.0
@@ -1118,3 +1136,485 @@ function listWrap(x,x_max=1,x_min=0) = (((x - x_min) % (x_max - x_min)) + (x_max
 function rnd(a = 1, b = 0, s = []) = 
   s == [] ? 
     (rands(min(a, b), max(   a, b), 1)[0]):(rands(min(a, b), max(a, b), 1, s)[0]); // nice rands wrapper 
+
+// =============================================================================
+//  scad-lib-FDMscrews
+// =============================================================================
+
+/*
+Date: 2016-07-23 ... 2017-12-13
+Author: Lukas M. Süss aka mechadense
+Name: basic-screw-profiles
+License: Public Domain
+*/
+
+
+// ####################################
+// ------------------------------------ PROFILE MODIFIERS
+  
+  // All profiles are supposed be properly defined in the bounding box: [[-1,-1],[+1,+1]] -- covering the whole range [[_,-1],[_,+1]]
+
+  // These triangular and saw waveforms (of period length 1) are tools 
+  // to make non-periodic functions periodic
+
+  function trirepeater0(x) = abs(((x*2+1)%2)-1)*2-1; // 0:1(=maximum) periodlength:1
+  // f(-1/2)=1 linear-down f(0)=-1 linear-up f(+1/2)=1
+
+  function sawrepeater1(x) = x-floor(x); // (can be used as profile)
+  // f(0)=0 linear-up f(1)=1 jump-down
+  
+  
+  // ####### profile amplitudes must be between 0 and 1 reaching both ##### !!!
+  // "crop01(x)" can be used to cull the profile function to these limits
+  function crop01(x) = min(1,max(0,x));
+
+
+// ####################################
+// ------------------------------------ PROFILES
+  // you may add more profiles here ... (plus corresponding entries at §§ locations)
+
+  // simple sinusodial
+  function profile_sinusodial(x) = (1-cos(x))/2; // thread profile
+
+  // rectangular
+  function profile_rectangular(x) = (sign(sin(x))+1)/2;
+
+  // simple triangular (linear) (kinks make speed steps make acceleration spikes)
+  function profile_triangular(x) = abs(((x/360*2+1)%2)-1);
+    // triangular //abs(((x+1)%2)-1)
+
+  // simple cubical:
+  // squarewavejerk is designed such 
+  // that when the printer nozzle is moved along its range [-1:+1]
+  // the acting accelerations and forces make a triangle wave 
+  // avoiding spikes in change rate of the acceleration (the "jerk")
+  function squarewavejerk(x) = (1+pow(x,3)/2-3*x/2)/2;
+  function profile_cubic(x) = squarewavejerk(trirepeater0(x/360));
+
+  // simple quartical: TODO ... probably of no use thus not implemented 
+  // function profile5(x) = "yet undefined";
+
+  // triangular stretched and cropped to trapezoidal
+  // TODO add some steeper versions
+  // trapezoidal stretchable & shiftable
+  t1 = 2; t2 = 0*0.25;
+  //function profile_trapezoid(x,t1,t2) = crop01( (profile2(x)-1/2)*t1+1/2+t2 );
+  function profile_trapezoid(x,t1,t2) = crop01( (profile_triangular(x)-1/2)*t1+1/2+t2 );
+    // BUG: for some screw-lengths this leads to soem non-manifold results :S
+
+  function profile_trapezoid0(x) = profile_trapezoid(x,2,0*1/4);
+  function profile_trapezoid_steep(x) = profile_trapezoid(x,4,0*1/4); // yet unused
+
+  function profile_saw_rising(x) = ( ceil(x/360) -(x/360) );
+  function profile_saw_falling(x) = ( (x/360)-floor(x/360) );
+
+  // sinusodial saw
+  function profile7(x) = profile_sinusodial(sawrepeater1(x/360)*360/2); // pos & neg
+  // TODO: barrel & pillow
+
+  // first terms of fourier series of rectangular wave
+  // sin(x)+1/3*sin(3*x)+1/5*sin(5*x)+ ... 
+  function profile_fourier5_square(x) = 
+    crop01( ( sin(x)+1/3*sin(3*x)+1/5*sin(5*x)*0 )/2+1/2 );
+  function profile101(x) = (1  - cos( x+cos(x)*45 ))/2; 
+
+  // circular (note the harsh 0° overhangs !)
+  function circles(x) =
+    1/2*(
+    (x<=1/2) ? 0.99+sqrt(1-pow(4*x-1,2)) : 
+    (x> 1/2) ? 1-sqrt(1-pow(4*x-3,2)) :1
+    );
+  function profile_circular(x) = sawrepeater1(circles(x/360));
+  
+  //echo( profile6(360.1)); // phi>360 PROBLEM
+  // where did profile6 go ???
+
+  // sinusodial convex braid
+  function profile_sine_blobby(x) = abs(cos(x/2));
+  // sinusodial concave spikes
+  function profile_sine_spikey(x) = 1-abs(cos(x/2));
+  // TODO: combination => curly brace shape .....
+
+  // gap trouble trianglesaw4 / sinusodial trianglesaw4
+  function slanttriangle(x,n) = ( (x<(1-1/n)) ? (n/(n-1))*x : 1 - (n)*x ); 
+  function profile_triang_asym(x) = sawrepeater1( slanttriangle(x/(360+0.1),4) );
+  // saw from stretched and squeezed sinusodial
+  // => soft profile with overhangs mainly on one side in case of
+  // NOT RECOMMENDET vertical orientation print
+  function profile_sine_asym(x) = 
+    1/2-1/2*cos( 180* sawrepeater1( slanttriangle(x/(360+0.1),4) )  );
+
+
+// ##############################
+
+
+// parameters r0 , dr
+function polar_profile(phi, name="unitcircle", parameters = []) =
+  (name == "unitcircle") ? 1 :
+  (name == "testprofile1") ?  10*profile_sinusodial(phi) : 1;
+  //(name == "testprofile1") ?  testprofile1(phi) : 1;
+  // testprofile1 not defined
+  
+  
+  
+// ############## OLD STUFF
+/*
+// currently the format parameter is pretty undefined ... TODO change that
+// todo ... radial clearingshift .... offset clearingshift ...
+// The list of predefined profile - supposed to be hidden away in a seperate library
+
+  // name == "syntaxtree" ? ... 
+  // use the paramlist as a syntax tree for algebraic expressions 
+  // STOP -- just a hypothetical possibility
+  // would require serious language reimplementation in the 
+  // unsuitable host language OpenSCAD
+  // its easier for users to just extend the function list here instead
+*/
+
+// -------------------------------------------------------------------
+
+// The following is an unmodified copy of lib-FDMscrews-HOF.scad
+// from the scad-lib-FDMscrews library,
+// taken from: https://github.com/mechadense/scad-lib-FDMscrews
+// It is licensed under LGPL-3.
+
+// lib-FDMscrews-HOF.scad
+// High-performance drop-in replacement for lib-FDMscrews.scad
+// Keeps identical API but with 10-100x performance improvement
+
+// Default resolutions (same as original)
+defresolcirc = 96; // 64, 96, 128
+defresolax = 48; // 32, 48, 64
+
+// =============================================================================
+// FAST GEOMETRY GENERATION (replaces minimal_extrusion_core.scad)
+// =============================================================================
+
+function generate_screw_geometry_fast(
+  screwtype,
+  r0, dr, twist, z_max, 
+  circum_resol, z_resol, 
+  starts=1, offsetangle=0
+) =
+let (
+  // Profile function selector - FIXED radius calculation
+  profileradiusfunction = function(phi)
+    let (
+      // Normalize angle to [0, 360) to prevent profile function issues
+      phi_norm = ((phi % 360) + 360) % 360,
+      profile_val = 
+        (screwtype == "cubic")     ? profile_cubic(phi_norm) :
+        (screwtype == "sinusodial") ? profile_sinusodial(phi_norm) :
+        (screwtype == "triangular") ? profile_triangular(phi_norm) :
+        (screwtype == "circular")   ? profile_circular(phi_norm) :
+        (screwtype == "trapezoid") ? profile_trapezoid0(phi_norm) :
+        (screwtype == "triang_asym")? profile_triang_asym(phi_norm) :
+        (screwtype == "sine_asym")  ? profile_sine_asym(phi_norm) :
+        (screwtype == "rect")       ? profile_rectangular(phi_norm) :
+        (screwtype == "saw_rising") ? profile_saw_rising(phi_norm) :
+        (screwtype == "saw_falling")? profile_saw_rising(phi_norm) :
+        (screwtype == "sine_spikey")? profile_sine_spikey(phi_norm) :
+        (screwtype == "sine_blobby")? profile_sine_blobby(phi_norm) :
+        (screwtype == "squarefourier5") ? profile_fourier5_square(phi_norm) :
+        0.5, // default fallback to middle value
+      // Clamp profile value to reasonable range
+      profile_clamped = max(0, min(1, profile_val))
+    )
+    r0 + dr * (profile_clamped - 1), // FIXED: Back to original formula (profile-1)
+  
+  // DEBUGGED vertex generation - removed problematic phi_offset for now
+  vertices = [
+    [0, 0, 0],      // bottom center (index 0)
+    [0, 0, z_max],  // top center (index 1)
+    
+    // Surface vertices - simplified for debugging
+    for (i_z = [0:z_resol])
+      for (i_phi = [0:circum_resol-1])
+        let (
+          z = i_z * z_max / z_resol,
+          phi_base = i_phi * 360 / circum_resol,
+          // Simplified: remove phi_offset temporarily to isolate issues
+          phi_twist = (i_z/z_resol) * twist, // Fixed sign - positive twist
+          phi_eval = starts * (phi_base + phi_twist) + offsetangle,
+          direction = [cos(phi_base), sin(phi_base)], // Use base direction
+          r = profileradiusfunction(phi_eval),
+          // Clamp radius to prevent geometry explosion - REMOVED clamping
+          r_safe = r
+        )
+        [r_safe * direction[0], r_safe * direction[1], z]
+  ],
+  
+  // FIXED face generation with better error checking
+  vertex_idx = function(layer, circ) 
+    let (idx = 2 + layer * circum_resol + (circ % circum_resol))
+    idx,
+  
+  faces = [
+    // Bottom cap - FIXED to eliminate z-fighting
+    for (j = [0:circum_resol-1])
+      [0, vertex_idx(0, j), vertex_idx(0, (j+1) % circum_resol)],
+    
+    // Top cap - FIXED to eliminate z-fighting
+    for (j = [0:circum_resol-1])
+      [1, vertex_idx(z_resol, (j+1) % circum_resol), vertex_idx(z_resol, j)],
+    
+    // Side surface - FIXED normals (correct winding for outward faces)
+    for (i = [0:z_resol-1])
+      for (j = [0:circum_resol-1])
+        let (
+          v1 = vertex_idx(i, j),
+          v2 = vertex_idx(i, (j+1) % circum_resol),
+          v3 = vertex_idx(i+1, j), 
+          v4 = vertex_idx(i+1, (j+1) % circum_resol)
+        )
+        // FIXED: Flipped winding order for proper outward normals
+        each [[v1, v3, v2], [v2, v3, v4]]
+  ]
+) [vertices, faces];
+
+// =============================================================================
+// FAST SCREW GENERATION MODULE (replaces screw_internal)
+// =============================================================================
+
+module screw_internal_fast(
+  screwtype = "circular",
+  r0 = 5,
+  dr = 1.5,
+  twist = 360*4,
+  z_max = 12,
+  circum_resol = defresolcirc,
+  z_resol = defresolax,
+  starts = 1,
+  offsetangle = 0
+) {
+  geometry = generate_screw_geometry_fast(
+    screwtype, r0, dr, twist, z_max, 
+    circum_resol, z_resol, starts, offsetangle
+  );
+  
+  polyhedron(points = geometry[0], faces = geometry[1], convexity = 3);
+}
+
+// =============================================================================
+// USER-FACING API - IDENTICAL TO ORIGINAL
+// =============================================================================
+
+module screwByPitch(
+  pitch = 3,
+  length = 12,
+  d0 = 10,
+  dr = 1.5,
+  circum_resol = defresolcirc,
+  axial_resol = defresolax,
+  starts = 1,
+  profile = "cubic",
+  offsetangle = 0,
+  flat = 1,
+  chamfer1 = false,
+  chamfer2 = false,
+  widen1 = false,
+  widen2 = false
+) {
+  r0 = d0/2;
+  twist = length/(pitch*starts)*360;
+  axial_resol2 = ceil(axial_resol*length/(2*r0));
+  
+  intersection() {
+    screw_internal_fast(
+      profile,
+      r0, dr,
+      twist,
+      length,
+      circum_resol,
+      axial_resol2,
+      starts,
+      offsetangle
+    );
+    screwcropper(length,r0,dr,flat,chamfer1,chamfer2,circum_resol);
+  }
+  screwaugmenter(length,r0,dr,flat,widen1,widen2,circum_resol);
+}
+
+module screwByTwist(
+  twist = 360*4,
+  length = 12,
+  d0 = 10,
+  dr = 1.5,
+  circum_resol = defresolcirc,
+  axial_resol = defresolax,
+  starts = 1,
+  profile = "cubic",
+  offsetangle = 0,
+  flat = 1,
+  chamfer1 = false,
+  chamfer2 = false,
+  widen1 = false,
+  widen2 = false
+) {
+  r0 = d0/2;
+  axial_resol2 = ceil(axial_resol*length/(2*r0));
+  
+  intersection() {
+    screw_internal_fast(
+      profile,
+      r0, dr,
+      twist,
+      length,
+      circum_resol,
+      axial_resol2,
+      starts,
+      offsetangle
+    );
+    screwcropper(length,r0,dr,flat,chamfer1,chamfer2,circum_resol);
+  }
+  screwaugmenter(length,r0,dr,flat,widen1,widen2,circum_resol);
+}
+
+// =============================================================================
+// SUPPORT MODULES (copied from original)
+// =============================================================================
+
+module screwaugmenter(
+  length, r0, dr,
+  flat = 0.6,
+  widen1 = false,
+  widen2 = false,
+  circum_resol = defresolcirc
+) {
+  if(widen1) {
+    intersection() {
+      translate([0,0,0])
+        cylinder(r1=r0,r2=r0-dr,h=dr,center=false,$fn=circum_resol);
+      translate([0,0,dr/2])
+        cube([2*r0*flat,r0*2+2,dr],center=true);
+    }
+  }
+  if(widen2) {
+    intersection() {
+      translate([0,0,length-dr])
+        cylinder(r2=r0,r1=r0-dr,h=dr,center=false,$fn=circum_resol);
+      translate([0,0,length-dr/2])
+        cube([2*r0*flat,r0*2+2,dr],center=true);
+    }
+  }
+}
+
+module screwcropper(
+  length, r0, dr,
+  flat = 0.6,
+  chamfer1 = false,
+  chamfer2 = false,
+  circum_resol = defresolcirc
+) {
+  intersection() {
+    union() {
+      if(chamfer1) {
+        translate([0,0,0])
+          cylinder(r1=r0-dr,r2=r0,h=dr,center=false,$fn=circum_resol);
+      }         
+      if(chamfer2) {
+        translate([0,0,length-dr])
+          cylinder(r1=r0,r2=r0-dr,h=dr,center=false,$fn=circum_resol);
+      }
+      dl = 0 + (chamfer1 ? dr : 0) + (chamfer2 ? dr : 0);
+      translate([0,0,chamfer1 ? dr : 0 ])
+        cylinder(r=r0+dr,h=length-dl,center=false,$fn=circum_resol); // FIXED: r0+dr instead of r0
+    }
+    // The flat cut - this should work with your manual intersection
+    translate([0,0,length/2])
+      cube([2*r0*flat,2*(r0+dr),length+2*dr],center=true); // FIXED: wider cube
+  }
+}
+
+// =============================================================================
+// HOF EXTENSIONS (BONUS - New capabilities!)
+// =============================================================================
+
+// For users who want to use custom profile functions directly
+module screwByPitch_HOF(
+  profile_func,           // Function instead of string!
+  pitch = 3,
+  length = 12,
+  d0 = 10,
+  dr = 1.5,
+  circum_resol = defresolcirc,
+  axial_resol = defresolax,
+  starts = 1,
+  offsetangle = 0,
+  flat = 1,
+  chamfer1 = false,
+  chamfer2 = false,
+  widen1 = false,
+  widen2 = false
+) {
+  r0 = d0/2;
+  twist = length/(pitch*starts)*360;
+  axial_resol2 = ceil(axial_resol*length/(2*r0));
+  
+  // Direct HOF geometry generation
+  vertices = [
+    [0, 0, 0], [0, 0, length],
+    for (i_z = [0:axial_resol2])
+      for (i_phi = [0:circum_resol-1])
+        let (
+          z = i_z * length / axial_resol2,
+          phi_base = i_phi * 360 / circum_resol,
+          phi_offset = (i_z) * (360/circum_resol) / 2,
+          phi_twist = -(i_z/axial_resol2) * twist,
+          phi_eval = starts * (phi_base + phi_offset + phi_twist) + offsetangle,
+          direction = [cos(phi_base + phi_offset), sin(phi_base + phi_offset)],
+          profile_value = profile_func(phi_eval),
+          r = r0 + dr * (profile_value - 1)
+        )
+        [r * direction[0], r * direction[1], z]
+  ];
+  
+  vertex_idx = function(layer, circ) 2 + layer * circum_resol + (circ % circum_resol);
+  
+  // FIXED HOF face generation
+  faces = [
+    for (j = [0:circum_resol-1])
+      [0, vertex_idx(0, (j+1) % circum_resol), vertex_idx(0, j)],
+    for (j = [0:circum_resol-1])
+      [1, vertex_idx(axial_resol2, j), vertex_idx(axial_resol2, (j+1) % circum_resol)],
+    for (i = [0:axial_resol2-1])
+      for (j = [0:circum_resol-1])
+        let (
+          v1 = vertex_idx(i, j),
+          v2 = vertex_idx(i, (j+1) % circum_resol),
+          v3 = vertex_idx(i+1, j),
+          v4 = vertex_idx(i+1, (j+1) % circum_resol)
+        )
+        each [[v1, v3, v2], [v2, v3, v4]]
+  ];
+  
+  intersection() {
+    polyhedron(vertices, faces, convexity=3);
+    screwcropper(length,r0,dr,flat,chamfer1,chamfer2,circum_resol);
+  }
+  screwaugmenter(length,r0,dr,flat,widen1,widen2,circum_resol);
+}
+
+module b3cube(x,y,z,bx,by,bz)
+{
+  hull()
+  {
+    cube([x-2*bx,y-2*by,z-0*bz],center=true);
+    cube([x-2*bx,y-0*by,z-2*bz],center=true);
+    cube([x-0*bx,y-2*by,z-2*bz],center=true);
+  }
+}
+
+// =============================================================================
+// USAGE EXAMPLES
+// =============================================================================
+
+// IDENTICAL to old library:
+// screwByPitch(pitch=3, length=12, d0=10, dr=1.5, profile="cubic");
+
+// NEW HOF capability:
+// my_profile = function(phi) 0.5 + 0.3*sin(phi) + 0.2*sin(3*phi);
+// screwByPitch_HOF(my_profile, pitch=3, length=12, d0=10, dr=1.5);
+
+// Use existing profiles as functions:
+// screwByPitch_HOF(profile_cubic, pitch=3, length=12, d0=10, dr=1.5);
