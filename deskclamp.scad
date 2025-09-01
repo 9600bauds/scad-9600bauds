@@ -111,7 +111,7 @@ Spigot_Shell_Thickness = 5; // [2:0.5:15]
 // [mm] Thickness of the interior infill shell around some parts.
 Extra_Interior_Infill_Thickness = 3;
 // [mm] Thickness of the side wall connecting the top and bottom arms.
-Middle_Wall_Thickness = 6; // [2:0.5:15]
+Middle_Wall_Thickness = 9; // [2:0.5:15]
 // [mm] Extra thickness on the top arm. Probably unnecessary.
 Extra_Top_Arm_Thickness = 0;
 // [mm] Extra thickness on the bottom arm. Might be desirable if you're using a thick metal nut.
@@ -167,18 +167,6 @@ real_side_screw_thread_length =
     Printable_Side_Screw_Thread_Length,
     Spigot_Shell_Thickness + spigot_socket_diameter / 2
   );
-
-beam_thickness = Middle_Wall_Thickness;
-beam_width = spigot_socket_diameter;     
-flange_thickness = beam_thickness / 3;
-top_bend_radius = beam_thickness;
-bottom_end_radius = beam_thickness;
-
-hb = beam_thickness / 2;
-support_minx = spigot_socket_diameter / 2 + hb;
-support_maxx = support_minx + Bottom_Arm_Length; // + hb;
-support_miny = bottom_thickness - beam_thickness + hb;
-support_maxy = total_height - hb;
 
 // =============================================================================
 //  Sanity Checks & Warnings
@@ -446,29 +434,45 @@ module cutouts(offset = 0) {
 // =============================================================================
 //  Support Beam
 // =============================================================================
+beam_thickness = Middle_Wall_Thickness;
+beam_width = spigot_socket_diameter;     
+flange_thickness = beam_thickness / 3;
+top_bend_radius = beam_thickness / 3;
+bottom_end_radius = beam_thickness / 3;
 
-cbeamPath = [    
-    //[support_maxx, support_maxy - top_bend_radius / 2, 0],
-    //[support_minx + top_bend_radius * 2, support_maxy - top_bend_radius / 2, top_bend_radius],
+hb = beam_thickness / 2;
+support_minx = spigot_socket_diameter / 2 + beam_thickness;
+support_maxx = support_minx + Bottom_Arm_Length;;
+support_miny = bottom_thickness;
+support_maxy = total_height - beam_thickness;
+
+tbonePath = [    
+    [support_maxx, support_maxy, 0],
+    [support_minx - top_bend_radius, support_maxy, top_bend_radius],
+    [support_minx - top_bend_radius, support_maxy - top_bend_radius, top_bend_radius],
+    [support_minx, support_maxy - top_bend_radius, top_bend_radius],
+    [support_minx, support_miny + bottom_end_radius, bottom_end_radius],
+    [support_minx - bottom_end_radius, support_miny + bottom_end_radius, bottom_end_radius],
+    [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
+    [support_maxx, support_miny, 0]  
+];
+cPath = [
     [support_maxx, support_maxy, 0],
     [support_minx, support_maxy, top_bend_radius],
     [support_minx, support_miny, bottom_end_radius],
     [support_maxx, support_miny, 0]  
 ];
-module full_beam_outline() polygon(polyRound(beamChain(cbeamPath, beam_thickness/2, -beam_thickness/2), fnBeam)); 
-module top_flange_outline() polygon(polyRound(beamChain(cbeamPath, beam_thickness/2, beam_thickness/2 -flange_thickness), fnBeam));
-module bot_flange_outline() polygon(polyRound(beamChain(cbeamPath, -beam_thickness/2 + flange_thickness, -beam_thickness/2), fnBeam));
-//// --- DEBUG: Draw the centerline path in red ---
-//dbgPathRP = beamChain(cbeamPath, offset1=0.5, offset2=-0.5);
-//color("red") polygon(polyRound(dbgPathRP, fnBeam));
-// --- DEBUG: Draw the abstract path in magenta ---
-//for(p = cbeamPath) {
-//  translate([p[0], p[1], 0]) color("magenta") circle(r=2);
-//}
+pathUsed = tbonePath;
+
+//inner_flange_path = polyRound(beamChain(tbonePath, 0, -flange_thickness), fnBeam);
+
+module full_beam_outline() polygon(polyRound(beamChain(pathUsed, 0, -beam_thickness), fnBeam)); 
+module outer_flange_outline() polygon(polyRound(beamChain(pathUsed, - beam_thickness + flange_thickness, -beam_thickness), fnBeam));
+module inner_flange_outline() polygon(polyRound(beamChain(pathUsed, 0, -flange_thickness), fnBeam));
     
 module fullbeam(width) linear_extrude(width) full_beam_outline();
-module topFlange(width) linear_extrude(width) top_flange_outline();
-module bottomFlange(width) linear_extrude(width) bot_flange_outline();
+module outerFlange(width) linear_extrude(width) outer_flange_outline();
+module innerFlange(width) linear_extrude(width) inner_flange_outline();
 module middleWeb(width) translate([0, 0, width/3]) linear_extrude(width/3) full_beam_outline();
 
 module gussets(width){
@@ -495,10 +499,20 @@ module ibeam(width){
     rotate([(90), 0, 0])
         translate([0, 0, -width/2])
             union(){
-                middleWeb(width);
-                topFlange(width);
-                bottomFlange(width);
-                gussets(width);
+                color("grey") middleWeb(width);
+                color("green") outerFlange(width);
+                color("pink") innerFlange(width);
+                color("black") gussets(width);
+
+                if (Debug_Mode) {
+                  // --- DEBUG: Draw the centerline path in cyan ---
+                  centerline = beamChain(tbonePath, offset1=0, offset2=-1);
+                  color("cyan") polygon(polyRound(centerline, fnBeam));
+                  // --- DEBUG: Draw the abstract path in magenta ---
+                  for(p = tbonePath) {
+                    translate([p[0], p[1], 0]) color("magenta") circle(r=0.5);
+                  }
+                }
             }
 }
 
@@ -526,18 +540,18 @@ module fullGeometry(){
       // Render the cutouts in solid red.
       //color("red") cutouts();
       // Render the support in solid black.
-      //ibeam(beam_width);
+      ibeam(beam_width);
       // Render the conceptual screw cap in solid blue.
       //translate([bottom_arm_center, 0, real_desk_screw_thread_length])
       //  color("blue") desk_screw_cap();
-      if(Enable_Metal_Side_Screw_Override == "false") { 
+      /*if(Enable_Metal_Side_Screw_Override == "false") { 
         go_to_side_screw_center() translate([0, 0, -Epsilon])
           color("purple") printable_side_screw();
       }
       if(Enable_Metal_Desk_Screw_Override == "false") {
         go_to_bottom_arm_center() translate([0, 0, -Epsilon])
           color("purple") printable_desk_screw();
-      }
+      }*/
     } else {
           difference() {
             clamp_body();
