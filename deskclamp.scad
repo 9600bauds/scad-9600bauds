@@ -111,7 +111,7 @@ Spigot_Shell_Thickness = 5; // [2:0.5:15]
 // [mm] Thickness of the interior infill shell around some parts.
 Extra_Interior_Infill_Thickness = 3;
 // [mm] Thickness of the side wall connecting the top and bottom arms.
-Middle_Wall_Thickness = 9; // [2:0.5:15]
+Middle_Wall_Thickness = 7; // [2:0.5:15]
 // [mm] Extra thickness on the top arm. Probably unnecessary.
 Extra_Top_Arm_Thickness = 0;
 // [mm] Extra thickness on the bottom arm. Might be desirable if you're using a thick metal nut.
@@ -121,15 +121,13 @@ Extra_Bottom_Arm_Thickness = 0;
 Hex_Nut_Clearance = 0.4; // [0:0.1:2] [mm] Clearance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
 Epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
 $fn = 16; // [16:128] Number of facets for curves. Higher is smoother.
-fnBeam = 8; // [8:64] Number of facets for the interior reinforcement beam.
+fnBeam = 16; // [8:64] Number of facets for the interior reinforcement beam.
 screwFm = 16;
-
-/* [Rendering options] */
-Debug_Mode = true; // Checkbox
-
-/* [Hidden] */
 Printable_Screw_Pitch = 3.6;
 Printable_Screw_Profile_Depth = 1.5;
+
+/* [Hidden] */
+Debug_Mode = true; // Checkbox
 // =============================================================================
 //  Derived Variables
 // =============================================================================
@@ -408,7 +406,7 @@ module cutouts(offset = 0) {
   // Hole for the spigot
   go_to_spigot_center()
     smooth_hole(d=spigot_socket_diameter + offset, h=Spigot_Socket_Height + offset);
-  // Desk screw + hex socket in the bottom arm
+  /*// Desk screw + hex socket in the bottom arm
   go_to_bottom_arm_center() { 
     if(Enable_Metal_Desk_Screw_Override == "true") {
       metal_screw_hole(d=real_desk_screw_diameter + offset, h=bottom_thickness + offset);
@@ -428,7 +426,7 @@ module cutouts(offset = 0) {
     else { 
       fdm_screw_hole(d=real_side_screw_diameter + offset, h=back_cylinder_diameter / 2 + offset);
     }
-  }
+  }*/
 }
 
 // =============================================================================
@@ -437,22 +435,24 @@ module cutouts(offset = 0) {
 beam_thickness = Middle_Wall_Thickness;
 beam_width = spigot_socket_diameter;     
 flange_thickness = beam_thickness / 3;
-top_bend_radius = beam_thickness / 3;
-bottom_end_radius = beam_thickness / 3;
+web_thickness = beam_thickness - flange_thickness * 2;
+top_bend_radius = 4;
+bottom_end_radius = 4;
+echo(bottom_end_radius);
 
 hb = beam_thickness / 2;
 support_minx = spigot_socket_diameter / 2 + beam_thickness;
-support_maxx = support_minx + Bottom_Arm_Length;;
+support_maxx = support_minx + Bottom_Arm_Length / 2;
 support_miny = bottom_thickness;
 support_maxy = total_height - beam_thickness;
 
 tbonePath = [    
     [support_maxx, support_maxy, 0],
     [support_minx - top_bend_radius, support_maxy, top_bend_radius],
-    [support_minx - top_bend_radius, support_maxy - top_bend_radius, top_bend_radius],
-    [support_minx, support_maxy - top_bend_radius, top_bend_radius],
-    [support_minx, support_miny + bottom_end_radius, bottom_end_radius],
-    [support_minx - bottom_end_radius, support_miny + bottom_end_radius, bottom_end_radius],
+    [support_minx - top_bend_radius, support_maxy - top_bend_radius * 2, top_bend_radius],
+    [support_minx, support_maxy - top_bend_radius * 2, top_bend_radius],
+    [support_minx, support_miny + bottom_end_radius * 2, bottom_end_radius],
+    [support_minx - bottom_end_radius, support_miny + bottom_end_radius * 2, bottom_end_radius],
     [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
     [support_maxx, support_miny, 0]  
 ];
@@ -475,17 +475,20 @@ module outerFlange(width) linear_extrude(width) outer_flange_outline();
 module innerFlange(width) linear_extrude(width) inner_flange_outline();
 module middleWeb(width) translate([0, 0, width/3]) linear_extrude(width/3) full_beam_outline();
 
+module topGussetClippingArea(){
+    y_offset = pathUsed == tbonePath ? top_bend_radius * 2 + flange_thickness + web_thickness : top_bend_radius;
+    translate([support_minx + flange_thickness / 2, support_maxy - y_offset, -999/2])
+        rotate([0,0,90])
+            cube([999, 999, 999]);
+}
+module bottomGussetClippingArea(){
+    y_offset = pathUsed == tbonePath ? bottom_end_radius * 2 + flange_thickness + web_thickness : bottom_end_radius;
+    translate([support_minx + bottom_end_radius / 2, support_miny + y_offset, -999/2])
+        rotate([0,0,180])
+            cube([999, 999, 999]);
+}
 module gussets(width){
-    module topGussetClippingArea(){
-        translate([support_minx + beam_thickness + top_bend_radius / 4, support_maxy - beam_thickness - top_bend_radius / 4, -999/2])
-            rotate([0,0,90])
-                cube([999, 999, 999]);
-    }
-    module bottomGussetClippingArea(){
-        translate([support_minx + beam_thickness + bottom_end_radius / 4, support_miny + beam_thickness + bottom_end_radius / 4, -999/2])
-            rotate([0,0,180])
-                cube([999, 999, 999]);
-    }
+
     intersection(){
         fullbeam(width);
         union(){
@@ -493,6 +496,7 @@ module gussets(width){
             bottomGussetClippingArea();
         }
     }
+
 }
     
 module ibeam(width){
@@ -505,11 +509,13 @@ module ibeam(width){
                 color("black") gussets(width);
 
                 if (Debug_Mode) {
-                  // --- DEBUG: Draw the centerline path in cyan ---
-                  centerline = beamChain(tbonePath, offset1=0, offset2=-1);
-                  color("cyan") polygon(polyRound(centerline, fnBeam));
+                    //%topGussetClippingArea();
+                    //%bottomGussetClippingArea();
+                   // --- DEBUG: Draw the centerline path in cyan ---
+                  centerline = beamChain(pathUsed, offset1=0, offset2=-1);
+                  //color("cyan") polygon(polyRound(centerline, fnBeam));
                   // --- DEBUG: Draw the abstract path in magenta ---
-                  for(p = tbonePath) {
+                  for(p = pathUsed) {
                     translate([p[0], p[1], 0]) color("magenta") circle(r=0.5);
                   }
                 }
@@ -530,13 +536,14 @@ module denseGeometry(){
     
 }
 module fullGeometry(){
+    union(){
     if (Debug_Mode) {
       // Render the main body with the '%' modifier.
       // This makes it transparent in the preview, like an x-ray.
-      %difference() {
+      /*%difference() {
         %clamp_body();
         %cutouts();
-      }
+      }*/
       // Render the cutouts in solid red.
       //color("red") cutouts();
       // Render the support in solid black.
@@ -558,6 +565,7 @@ module fullGeometry(){
             cutouts();
           }
     }
+}
 }
     if (part == "all") {
       align_clamp_to_print_bed()
