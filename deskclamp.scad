@@ -94,14 +94,10 @@ Side_Hex_Nut_Thickness = 3.25; // [1:0.1:10]
 /* [Cosmetics] */
 //[deg] Angle of the side taper.
 Taper_Angle = 15; // [0:45]
-//[mm] The fillet radius of the top arm corners.
-Top_Fillet_Radius = 6; // [0:0.5:20]
-//Todo
-Top_Chamfer_Radius = 1; // [0:0.5:3]
-//[mm] The fillet radius of the bottom arm corners.
+Top_Fillet_Radius = 12; // [0:0.5:20]
+Top_Chamfer_Radius = 2; // [0:0.5:3]
 Bottom_Fillet_Radius = 6; // [0:0.5:20] 
-//Todo
-Bottom_Chamfer_Radius = 1; // [0:0.5:3]
+Bottom_Chamfer_Radius = 2; // [0:0.5:3]
 Desk_Screw_Cap_Diameter = 16; // [5:0.1:30] [mm] The diameter of the screw cap.
 Desk_Screw_Cap_Thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
 
@@ -120,9 +116,9 @@ Extra_Bottom_Arm_Thickness = 0;
 /* [Clearances And Quality] */
 Hex_Nut_Clearance = 0.4; // [0:0.1:2] [mm] Clearance (extra empty space) for hex nuts. Might be hard to fit the nut if set too low.
 Epsilon = 0.1; // [0.01:0.01:1] [mm] Extra margin for cut-throughs.
-$fn = 16; // [16:128] Number of facets for curves. Higher is smoother.
-fnBeam = 16; // [8:64] Number of facets for the interior reinforcement beam.
-screwFm = 16;
+$fn = 8; // [16:128] Number of facets for curves. Higher is smoother.
+fnBeam = 6; // [8:64] Number of facets for the interior reinforcement beam.
+screwFm = 8;
 Printable_Screw_Pitch = 3.6;
 Printable_Screw_Profile_Depth = 1.5;
 
@@ -229,27 +225,28 @@ module rounded_triangle(big_diameter, small_diameter, Taper_Angle, flat_face_dis
   R = big_diameter / 2;
   r = small_diameter / 2;
 
-  // The geometry is a large circle at the origin and two smaller circles
-  // tangent to a vertical line and the two sides of the taper.
+  let(
+    // Half of the taper angle is the angle of the top edge relative to the x-axis.
+    half_angle = Taper_Angle / 2,
 
-  // Slope of the tapered sides
-  m = tan(Taper_Angle / 2);
-  // Secant of the half-angle, used to find the y-intercept of the tangent line
-  S = sqrt(1 + m * m);
+    // 1. Calculate the coordinates of the front two vertices.
+    // They lie on a simple vertical line.
+    vx_front = R + flat_face_dist,
+    // The height of the top-front vertex is found using simple trigonometry.
+    // It's the y-value of the tangent line that starts at the back vertex.
+    vy_front = tan(half_angle) * (vx_front + R / sin(half_angle)),
 
-  // The front flat face is a vertical line at x = R + flat_dist
-  x_flat = R + flat_face_dist;
-  // Center of the small rounding circle, which is tangent to the front face
-  cx = x_flat - r;
-
-  // Derived from the condition that the sloped line y = m*x + c must be
-  // tangent to both the large circle (at origin) and the small circle (at [cx, cy]).
-  cy = m * cx + (R - r) * S;
-
-  hull() {
-    translate([0, 0]) circle(r=R);
-    translate([cx, cy]) circle(r=r);
-    translate([cx, -cy]) circle(r=r);
+    // 2. Calculate the coordinate of the back vertex.
+    // This is the point where the two tapered lines would intersect.
+    vx_back = -R / sin(half_angle)
+  )
+  {
+    radii_points = [
+      [vx_back,  0,        R], // Back corner is rounded by the large radius
+      [vx_front, vy_front, r], // Top-front corner is rounded by the small radius
+      [vx_front, -vy_front,r]  // Bottom-front corner is rounded by the small radius
+    ];
+    polygon(polyRound(radii_points, $fn));
   }
 }
 
@@ -264,20 +261,26 @@ module crop_sides(){
             cube(999);
     };
 }
+module crop_gap(){
+  difference(){
+    children();
+    rotate([(90), 0, 0]) linear_extrude(height=999, center=true) polygon(polyRound(pathUsed, fnBeam));
+  };
+}
 
-module chamfered_extrude(height, bottom_radius, top_radius) {
+module chamfered_extrude(height, bottom_radius = 0, top_radius = 0, center = false) {
     hull() {
       translate([0,0,0]) // pointless but kept for legibility
-        linear_extrude(height=bottom_radius)
+        linear_extrude(height=bottom_radius, center=center)
           offset(r=-bottom_radius)  // shrink profile to "loft" the round
             children();
 
       translate([0,0,bottom_radius])
-        linear_extrude(height=height - bottom_radius - top_radius)
+        linear_extrude(height=height - bottom_radius - top_radius, center=center)
           children();
 
       translate([0,0,height-top_radius])
-        linear_extrude(height=top_radius)
+        linear_extrude(height=top_radius, center=center)
           offset(r=-top_radius)  // shrink profile to "loft" the round
             children();
     }
@@ -350,35 +353,26 @@ module align_clamp_to_print_bed() {
 //  Clamp Solid Body Components
 // =============================================================================
 
-module middle_outline() rounded_triangle(back_cylinder_diameter, Epsilon, Taper_Angle, 0);
-module bottom_outline() hull(){rounded_triangle(back_cylinder_diameter, Bottom_Fillet_Radius, Taper_Angle, Bottom_Arm_Length + extra_inner_offset); middle_outline();};
-module top_arm_outline() hull(){rounded_triangle(back_cylinder_diameter, Top_Fillet_Radius, Taper_Angle, Top_Arm_Length + extra_inner_offset); middle_outline();}
+module bottom_outline() rounded_triangle(back_cylinder_diameter, Bottom_Fillet_Radius, Taper_Angle, Bottom_Arm_Length + extra_inner_offset);
+module top_outline() rounded_triangle(back_cylinder_diameter, Top_Fillet_Radius, Taper_Angle, Top_Arm_Length + extra_inner_offset);
 
 module top_arm_solid() {
     translate([0, 0, total_height - top_thickness])
-      linear_extrude(height = top_thickness)
-        top_arm_outline();
-}
-
-module bottom_arm_solid() {
-    linear_extrude(height = bottom_thickness)
-      bottom_outline();
+      chamfered_extrude(height = top_thickness, bottom_radius = 0, top_radius = Top_Chamfer_Radius)
+        top_outline();
 }
 
 module middle_section_solid() {
-    union(){
-        chamfered_extrude(height=total_height, bottom_radius = Bottom_Chamfer_Radius, top_radius = Top_Chamfer_Radius)
-          middle_outline();
-        ibeam(999);
-    }
+  chamfered_extrude(height = total_height - top_thickness, bottom_radius = Bottom_Chamfer_Radius/*, top_radius = Top_Chamfer_Radius*/)
+    bottom_outline();
 }
 
 module clamp_body() {
-  crop_sides()
-  union() {
-    top_arm_solid();
-    bottom_arm_solid();
-    middle_section_solid();
+  //crop_sides()
+  crop_gap()
+    union() {
+      top_arm_solid();
+      middle_section_solid();
   }
 }
 
@@ -438,11 +432,9 @@ flange_thickness = beam_thickness / 3;
 web_thickness = beam_thickness - flange_thickness * 2;
 top_bend_radius = 4;
 bottom_end_radius = 4;
-echo(bottom_end_radius);
 
-hb = beam_thickness / 2;
 support_minx = spigot_socket_diameter / 2 + beam_thickness;
-support_maxx = support_minx + Bottom_Arm_Length / 2;
+support_maxx = support_minx + Bottom_Arm_Length / 2 + 99;
 support_miny = bottom_thickness;
 support_maxy = total_height - beam_thickness;
 
@@ -455,6 +447,18 @@ tbonePath = [
     [support_minx - bottom_end_radius, support_miny + bottom_end_radius * 2, bottom_end_radius],
     [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
     [support_maxx, support_miny, 0]  
+];
+dogBonePath = [    
+    [support_maxx + 9, support_maxy, 0],
+    [support_minx + top_bend_radius, support_maxy, 0],
+    [support_minx + top_bend_radius, support_maxy + top_bend_radius, top_bend_radius],
+    [support_minx - top_bend_radius, support_maxy + top_bend_radius, top_bend_radius],
+    [support_minx - top_bend_radius, support_maxy - top_bend_radius, top_bend_radius],
+    [support_minx, support_maxy - top_bend_radius, 0],
+    [support_minx, support_miny + bottom_end_radius * 2, bottom_end_radius],
+    [support_minx - bottom_end_radius, support_miny + bottom_end_radius * 2, bottom_end_radius],
+    [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
+    [support_maxx, support_miny, 0]
 ];
 cPath = [
     [support_maxx, support_maxy, 0],
@@ -513,7 +517,7 @@ module ibeam(width){
                     //%bottomGussetClippingArea();
                    // --- DEBUG: Draw the centerline path in cyan ---
                   centerline = beamChain(pathUsed, offset1=0, offset2=-1);
-                  //color("cyan") polygon(polyRound(centerline, fnBeam));
+                  color("cyan") polygon(polyRound(pathUsed, fnBeam));
                   // --- DEBUG: Draw the abstract path in magenta ---
                   for(p = pathUsed) {
                     translate([p[0], p[1], 0]) color("magenta") circle(r=0.5);
@@ -540,14 +544,14 @@ module fullGeometry(){
     if (Debug_Mode) {
       // Render the main body with the '%' modifier.
       // This makes it transparent in the preview, like an x-ray.
-      /*%difference() {
-        %clamp_body();
-        %cutouts();
-      }*/
+      difference() {
+        clamp_body();
+        cutouts();
+      }
       // Render the cutouts in solid red.
       //color("red") cutouts();
       // Render the support in solid black.
-      ibeam(beam_width);
+      //ibeam(beam_width);
       // Render the conceptual screw cap in solid blue.
       //translate([bottom_arm_center, 0, real_desk_screw_thread_length])
       //  color("blue") desk_screw_cap();
