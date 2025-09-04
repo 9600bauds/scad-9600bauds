@@ -40,14 +40,16 @@
 part = "all"; // [all:Full Preview,dense:Denser Region,sidescrew:Side Screw,deskscrew:Desk Screw]
 
 /* [Main Dimensions] */
-//[mm]
+// [mm] Todo
 Max_Desk_Thickness = 42; // [10:100]
-// [mm] The outer diameter of the spigot for your lamp/mic/whatever.
+// [mm] How far down into the spigot socket will the side screw be? If 0, will automatically center to half.
+Side_Screw_Offset = 0; // [0:50]
+// [mm] The outer diameter of the spigot for your lamp/mic/whatever. Check the diameter at multiple locations, your spigot may taper slightly.
 Spigot_Diameter = 12.5; // [5:0.1:40]
+// [mm] How deep your spigot fits into the spigot socket, from the top.
+Spigot_Height = 25.25; // [10:100]
 // [mm] Clearance (extra empty space) for the spigot socket. Increase for looser fit. Recommended: 0.2-0-4.
 Spigot_Clearance = 0.2; // [0:0.1:1]
-// [mm] How deep your spigot fits into the spigot socket, from the top.
-Spigot_Socket_Height = 25.25; // [10:100]
 // [mm] How far into the top of the desk the top arm goes.
 Top_Arm_Length = 30; // [10:100]
 // [mm] How far into the underside of the desk the bottom arm goes. The sides of your desk might have reduced space on the underside.
@@ -72,8 +74,6 @@ Desk_Hex_Nut_Thickness = 6.75; // [2:0.1:15]
 Desk_Hex_Nut_Support_Wall_Thickness = 1.2;
 
 /* [Printable Side Screw] */
-// [mm] How far down into the spigot socket the center of the side screw will be. If 0, will automatically center to half of the spigot socket.
-Printable_Side_Screw_Offset = 0; // [0:50]
 // [mm] The major diameter (max, thread-end-to-thread-end) of the side screw.
 Printable_Side_Screw_Diameter = 8; // [3:0.1:10]
 // [mm] The length of the side screw's thread. If 0, will auto-calculate.
@@ -82,8 +82,6 @@ Printable_Side_Screw_Thread_Length = 0; // [0:35]
 /* [Metal Side Screw Override] */
 // Enable to override the printable side screw with sockets for you to provide your own metal screw and hexnut.
 Enable_Metal_Side_Screw_Override = "false"; // [false,true]
-// [mm] How far down into the spigot socket the center of the side screw will be. If 0, will automatically center to half of the spigot socket.
-Metal_Side_Screw_Offset = 0; // [0:50]
 // [mm] The major diameter (max, thread-end-to-thread-end) of the side screw.
 Metal_Side_Screw_Diameter = 8; // [3:0.1:10]
 // [mm] The flat-to-flat distance of the side hex nut.
@@ -100,6 +98,7 @@ Bottom_Fillet_Radius = 6; // [0:0.5:20]
 Bottom_Chamfer_Radius = 2; // [0:0.5:3]
 Desk_Screw_Cap_Diameter = 16; // [5:0.1:30] [mm] The diameter of the screw cap.
 Desk_Screw_Cap_Thickness = 4; // [2:0.1:10] [mm] The thickness of the screw cap.
+Inner_Filet_Style = "tbone"; // [tbone:T-Bone,c:External]
 
 /* [Support And Thickness] */
 // [mm] Wall thickness of the shell around the lamp spigot (thicker = sturdier but bigger).
@@ -149,9 +148,7 @@ real_desk_screw_thread_length =
   );
 
 real_side_screw_offset =
-  Enable_Metal_Side_Screw_Override == "true" ?
-    value_or_default(Printable_Side_Screw_Offset, Spigot_Socket_Height / 2) :
-    value_or_default(Printable_Side_Screw_Offset, Spigot_Socket_Height / 2);
+  value_or_default(Side_Screw_Offset, Spigot_Height / 2);
 real_side_screw_diameter =
   Enable_Metal_Side_Screw_Override == "true" ?
     Metal_Side_Screw_Diameter :
@@ -168,8 +165,8 @@ real_side_screw_thread_length =
 
 /*// Check if the side screw is logically placed
 assert(
-  real_side_screw_offset + Side_Screw_Diameter / 2 <= Spigot_Socket_Height,
-  str("ERROR: Side screw offset (", Side_Screw_Offset, ") is too low for the spigot socket (length: ", Spigot_Socket_Height, "). The screw will not engage with the spigot. Increase Spigot_Socket_Height or decrease Side_Screw_Offset.")
+  real_side_screw_offset + Side_Screw_Diameter / 2 <= Spigot_Height,
+  str("ERROR: Side screw offset (", Side_Screw_Offset, ") is too low for the spigot socket (length: ", Spigot_Height, "). The screw will not engage with the spigot. Increase Spigot_Height or decrease Side_Screw_Offset.")
 );
 assert(
   real_side_screw_offset >= (Side_Screw_Diameter / 2) + 1.5,
@@ -250,21 +247,11 @@ module rounded_triangle(big_diameter, small_diameter, Taper_Angle, flat_face_dis
   }
 }
 
-module crop_sides(){
-    difference(){
-      children();
-      rotate([0, 0, 90 + Taper_Angle / 2])
-        translate([back_cylinder_diameter / 2 - 0.1, -999/2, -999/2])
-            cube(999);
-      rotate([0, 0, 90 - Taper_Angle / 2])
-        translate([-999 -back_cylinder_diameter / 2 + 0.1, -999/2, -999/2])
-            cube(999);
-    };
-}
 module crop_gap(){
+  path = path_points(999, total_height - beam_thickness * 2);
   difference(){
     children();
-    rotate([(90), 0, 0]) linear_extrude(height=999, center=true) polygon(polyRound(pathUsed, fnBeam));
+    go_to_inner_bottom_left_corner() rotate([(90), 0, 0]) linear_extrude(height=999, center=true) polygon(polyRound(path, fnBeam));
   };
 }
 
@@ -305,12 +292,9 @@ module fdm_screw_hole(d, h, clearance = Epsilon) {
     dr=Printable_Screw_Profile_Depth, chamfer1=false, chamfer2=false, circum_resol=screwFm, axial_resol=screwFm);
 }
 
-module flatScrewWithHandle(l = 32, d = 12)
+module flatScrewWithHandle(l = 32, d = 12, lthreadless = 5, lhandle = 6, whandle = 20)
 {
   c = 1.0; // chamfersize
-  lthreadless = 5;
-  lhandle = 6;
-  whandle = 20;
 
   intersection()
   {
@@ -339,9 +323,13 @@ module go_to_bottom_arm_center() {
     children();
 }
 module go_to_side_screw_center() {
-  translate([(back_cylinder_diameter / -2), 0, total_height - real_side_screw_offset])
+  translate([back_cylinder_diameter / -2, 0, total_height - real_side_screw_offset])
     rotate([0, 90, 0])
       children();
+}
+module go_to_inner_bottom_left_corner() {
+  translate([back_cylinder_diameter / 2 + extra_inner_offset, 0, bottom_thickness])
+    children();
 }
 module align_clamp_to_print_bed() {
   translate([0, 0, (back_cylinder_diameter / 2) * cos(Taper_Angle / 2)])
@@ -399,8 +387,8 @@ module desk_screw_cap() {
 module cutouts(offset = 0) {
   // Hole for the spigot
   go_to_spigot_center()
-    smooth_hole(d=spigot_socket_diameter + offset, h=Spigot_Socket_Height + offset);
-  /*// Desk screw + hex socket in the bottom arm
+    smooth_hole(d=spigot_socket_diameter + offset, h=Spigot_Height + offset);
+  // Desk screw + hex socket in the bottom arm
   go_to_bottom_arm_center() { 
     if(Enable_Metal_Desk_Screw_Override == "true") {
       metal_screw_hole(d=real_desk_screw_diameter + offset, h=bottom_thickness + offset);
@@ -420,58 +408,50 @@ module cutouts(offset = 0) {
     else { 
       fdm_screw_hole(d=real_side_screw_diameter + offset, h=back_cylinder_diameter / 2 + offset);
     }
-  }*/
+  }
 }
 
 // =============================================================================
 //  Support Beam
 // =============================================================================
 beam_thickness = Middle_Wall_Thickness;
-beam_width = spigot_socket_diameter;     
+beam_height = total_height;
 flange_thickness = beam_thickness / 3;
 web_thickness = beam_thickness - flange_thickness * 2;
 top_bend_radius = 4;
 bottom_end_radius = 4;
 
-support_minx = spigot_socket_diameter / 2 + beam_thickness;
-support_maxx = support_minx + Bottom_Arm_Length / 2 + 99;
-support_miny = bottom_thickness;
-support_maxy = total_height - beam_thickness;
+function path_points(length, height) = 
+  let(
+    support_minx = 0,
+    support_maxx = support_minx + length,
+    support_miny = 0,
+    support_maxy = height - support_miny
+  )
+  Inner_Filet_Style == "tbone" ? [
+      [support_maxx, support_maxy, 0],
+      [support_minx - top_bend_radius, support_maxy, top_bend_radius],
+      [support_minx - top_bend_radius, support_maxy - top_bend_radius * 2, top_bend_radius],
+      [support_minx, support_maxy - top_bend_radius * 2, top_bend_radius],
+      [support_minx, support_miny + bottom_end_radius * 2, bottom_end_radius],
+      [support_minx - bottom_end_radius, support_miny + bottom_end_radius * 2, bottom_end_radius],
+      [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
+      [support_maxx, support_miny, 0]
+  ] : Inner_Filet_Style == "c" ? [
+      [support_maxx, support_maxy, 0],
+      [support_minx, support_maxy, top_bend_radius],
+      [support_minx, support_miny, bottom_end_radius],
+      [support_maxx, support_miny, 0]
+  ] : [];
 
-tbonePath = [    
-    [support_maxx, support_maxy, 0],
-    [support_minx - top_bend_radius, support_maxy, top_bend_radius],
-    [support_minx - top_bend_radius, support_maxy - top_bend_radius * 2, top_bend_radius],
-    [support_minx, support_maxy - top_bend_radius * 2, top_bend_radius],
-    [support_minx, support_miny + bottom_end_radius * 2, bottom_end_radius],
-    [support_minx - bottom_end_radius, support_miny + bottom_end_radius * 2, bottom_end_radius],
-    [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
-    [support_maxx, support_miny, 0]  
-];
-dogBonePath = [    
-    [support_maxx + 9, support_maxy, 0],
-    [support_minx + top_bend_radius, support_maxy, 0],
-    [support_minx + top_bend_radius, support_maxy + top_bend_radius, top_bend_radius],
-    [support_minx - top_bend_radius, support_maxy + top_bend_radius, top_bend_radius],
-    [support_minx - top_bend_radius, support_maxy - top_bend_radius, top_bend_radius],
-    [support_minx, support_maxy - top_bend_radius, 0],
-    [support_minx, support_miny + bottom_end_radius * 2, bottom_end_radius],
-    [support_minx - bottom_end_radius, support_miny + bottom_end_radius * 2, bottom_end_radius],
-    [support_minx - bottom_end_radius, support_miny, bottom_end_radius],
-    [support_maxx, support_miny, 0]
-];
-cPath = [
-    [support_maxx, support_maxy, 0],
-    [support_minx, support_maxy, top_bend_radius],
-    [support_minx, support_miny, bottom_end_radius],
-    [support_maxx, support_miny, 0]  
-];
-pathUsed = tbonePath;
-
-//inner_flange_path = polyRound(beamChain(tbonePath, 0, -flange_thickness), fnBeam);
-
-module full_beam_outline() polygon(polyRound(beamChain(pathUsed, 0, -beam_thickness), fnBeam)); 
-module outer_flange_outline() polygon(polyRound(beamChain(pathUsed, - beam_thickness + flange_thickness, -beam_thickness), fnBeam));
+module ibeam(length = Bottom_Arm_Length / 2, height = total_height - beam_thickness * 2, width = Spigot_Diameter, thickness = beam_thickness){
+  pathUsed = path_points(length, height);
+      support_minx = 0;
+    support_maxx = support_minx + length;
+    support_miny = 0;
+    support_maxy = height - support_miny;
+  module full_beam_outline() polygon(polyRound(beamChain(pathUsed, 0, -thickness), fnBeam)); 
+module outer_flange_outline() polygon(polyRound(beamChain(pathUsed, -thickness + flange_thickness, -thickness), fnBeam));
 module inner_flange_outline() polygon(polyRound(beamChain(pathUsed, 0, -flange_thickness), fnBeam));
     
 module fullbeam(width) linear_extrude(width) full_beam_outline();
@@ -480,19 +460,19 @@ module innerFlange(width) linear_extrude(width) inner_flange_outline();
 module middleWeb(width) translate([0, 0, width/3]) linear_extrude(width/3) full_beam_outline();
 
 module topGussetClippingArea(){
-    y_offset = pathUsed == tbonePath ? top_bend_radius * 2 + flange_thickness + web_thickness : top_bend_radius;
+    y_offset = Inner_Filet_Style == "tbone" ? top_bend_radius * 2 + flange_thickness + web_thickness : top_bend_radius;
     translate([support_minx + flange_thickness / 2, support_maxy - y_offset, -999/2])
         rotate([0,0,90])
             cube([999, 999, 999]);
 }
 module bottomGussetClippingArea(){
-    y_offset = pathUsed == tbonePath ? bottom_end_radius * 2 + flange_thickness + web_thickness : bottom_end_radius;
+    y_offset = Inner_Filet_Style == "tbone" ? bottom_end_radius * 2 + flange_thickness + web_thickness : bottom_end_radius;
     translate([support_minx + bottom_end_radius / 2, support_miny + y_offset, -999/2])
         rotate([0,0,180])
             cube([999, 999, 999]);
 }
-module gussets(width){
 
+module gussets(width){
     intersection(){
         fullbeam(width);
         union(){
@@ -502,30 +482,19 @@ module gussets(width){
     }
 
 }
-    
-module ibeam(width){
-    rotate([(90), 0, 0])
-        translate([0, 0, -width/2])
-            union(){
-                color("grey") middleWeb(width);
-                color("green") outerFlange(width);
-                color("pink") innerFlange(width);
-                color("black") gussets(width);
 
-                if (Debug_Mode) {
-                    //%topGussetClippingArea();
-                    //%bottomGussetClippingArea();
-                   // --- DEBUG: Draw the centerline path in cyan ---
-                  centerline = beamChain(pathUsed, offset1=0, offset2=-1);
-                  color("cyan") polygon(polyRound(pathUsed, fnBeam));
-                  // --- DEBUG: Draw the abstract path in magenta ---
-                  for(p = pathUsed) {
-                    translate([p[0], p[1], 0]) color("magenta") circle(r=0.5);
-                  }
-                }
-            }
+  go_to_inner_bottom_left_corner() rotate([(90), 0, 0])
+      translate([0, 0, -width/2])
+          union(){
+              middleWeb(width);
+              outerFlange(width);
+              innerFlange(width);
+              gussets(width);
+          }
 }
 
+
+    
 // =============================================================================
 //  Main Assembly
 // =============================================================================
@@ -534,7 +503,7 @@ module denseGeometry(){
         fullGeometry();
         union(){
             cutouts(Extra_Interior_Infill_Thickness);
-            ibeam(beam_width);
+            ibeam();
         }
     }
     
@@ -551,7 +520,8 @@ module fullGeometry(){
       // Render the cutouts in solid red.
       //color("red") cutouts();
       // Render the support in solid black.
-      //ibeam(beam_width);
+      //ibeam(Bottom_Arm_Length / 2, total_height - beam_thickness * 2, Spigot_Diameter, beam_thickness);
+      //length, height, width, thickness)
       // Render the conceptual screw cap in solid blue.
       //translate([bottom_arm_center, 0, real_desk_screw_thread_length])
       //  color("blue") desk_screw_cap();
@@ -572,10 +542,10 @@ module fullGeometry(){
 }
 }
     if (part == "all") {
-      align_clamp_to_print_bed()
+      //align_clamp_to_print_bed()
           fullGeometry();
     } else if (part == "dense") {
-      align_clamp_to_print_bed()
+      //align_clamp_to_print_bed()
           denseGeometry();
     } else if (part == "sidescrew") {
       rotate([0, 90, 0])
