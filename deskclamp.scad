@@ -401,26 +401,26 @@ module desk_screw_cap() {
 module cutouts(offset = 0) {
   // Hole for the spigot
   go_to_spigot_center()
-    smooth_hole(d=spigot_socket_diameter + offset, h=Spigot_Height + offset);
+    smooth_hole(d=spigot_socket_diameter + offset * 2, h=Spigot_Height + offset);
   // Desk screw + hex socket in the bottom arm
   go_to_bottom_arm_center() { 
     if(Enable_Metal_Desk_Screw_Override == "true") {
-      metal_screw_hole(d=real_desk_screw_diameter + offset, h=bottom_thickness + offset);
+      metal_screw_hole(d=real_desk_screw_diameter + offset * 2, h=bottom_thickness + offset);
       translate([0, 0, Desk_Hex_Nut_Support_Wall_Thickness - offset])
-      hex_pocket(size=Desk_Hex_Nut_Size + offset, thickness=Desk_Hex_Nut_Thickness + offset);
+      hex_pocket(size=Desk_Hex_Nut_Size + offset * 2, thickness=Desk_Hex_Nut_Thickness + offset);
     }
     else {
-      fdm_screw_hole(d=real_desk_screw_diameter + offset, h=bottom_thickness + offset);
+      fdm_screw_hole(d=real_desk_screw_diameter + offset * 2, h=bottom_thickness + offset);
     }
   }
   // Side screw + hex socket at the back
   go_to_side_screw_center() {
     if(Enable_Metal_Side_Screw_Override == "true") {
-      metal_screw_hole(d=real_side_screw_diameter + offset, h=back_cylinder_diameter / 2 + offset);
-      hex_pocket(size=Side_Hex_Nut_Size + offset, thickness=Side_Hex_Nut_Thickness + offset);
+      metal_screw_hole(d=real_side_screw_diameter + offset * 2, h=back_cylinder_diameter / 2 + offset);
+      hex_pocket(size=Side_Hex_Nut_Size + offset * 2, thickness=Side_Hex_Nut_Thickness + offset);
     }
     else { 
-      fdm_screw_hole(d=real_side_screw_diameter + offset, h=back_cylinder_diameter / 2 + offset);
+      fdm_screw_hole(d=real_side_screw_diameter + offset * 2, h=back_cylinder_diameter / 2 + offset);
     }
   }
 }
